@@ -1,0 +1,2 @@
+﻿  NAV Tests.cpp
+LINK : fatal error LNK1104: cannot open file 'C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\x64\Debug\NAV Tests.exe'
