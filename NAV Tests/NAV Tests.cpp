@@ -119,7 +119,9 @@ typedef struct _NAV_PROCESS_HANDLES {
 
 LPVOID NavGetFunctionPtr(_In_ LPSTR LibraryName, _In_ LPSTR FunctionName) {
 	HMODULE LibraryHandle = GetModuleHandleA(LibraryName);
-	return GetProcAddress(LibraryHandle, FunctionName);
+	FARPROC ProcAddress = GetProcAddress(LibraryHandle, FunctionName);
+	//CloseHandle(LibraryHandle);
+	return ProcAddress;
 }
 
 BOOL NavGetProcessHandles(_In_ ULONG ProcessId, _Out_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct) {
@@ -241,26 +243,60 @@ BOOL NavGetProcessHandles(_In_ ULONG ProcessId, _Out_ PNAV_PROCESS_HANDLES lpNav
 
 BOOL NavFreeProcessHandles(_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct) {
 	PNAV_PROCESS_HANDLES ptrTempNavStructHandles = lpNavProcessHandlesStruct;
+	ULONG NumOfStructElements = 1;
+	LPVOID ptrStructHandlesArr;
+
 	while (ptrTempNavStructHandles->NextAddress != NULL) {
-		HeapFree(GetProcessHeap(), NULL, (LPVOID)ptrTempNavStructHandles->PObjectTypeInformation);
+		NumOfStructElements++;
 		ptrTempNavStructHandles = (PNAV_PROCESS_HANDLES)ptrTempNavStructHandles->NextAddress;
-		HeapFree(GetProcessHeap(), NULL, (LPVOID)ptrTempNavStructHandles);
 	}
-	HeapFree(GetProcessHeap(), NULL, (LPVOID)ptrTempNavStructHandles);
+
+	ptrStructHandlesArr = HeapAlloc(
+		GetProcessHeap(), HEAP_ZERO_MEMORY, (ULONG_PTR)NumOfStructElements * sizeof(PNAV_PROCESS_HANDLES));
+
+	ptrTempNavStructHandles = lpNavProcessHandlesStruct;
+
+	*((PNAV_PROCESS_HANDLES*)ptrStructHandlesArr) = lpNavProcessHandlesStruct;
+
+	for (ULONG Idx = 1; Idx < NumOfStructElements; Idx++) {
+		PNAV_PROCESS_HANDLES* offsetAddress = ((PNAV_PROCESS_HANDLES*)((ULONG_PTR)ptrStructHandlesArr + 
+			(ULONG_PTR)Idx * sizeof(PNAV_PROCESS_HANDLES)));
+		*offsetAddress = ptrTempNavStructHandles;
+		ptrTempNavStructHandles = (PNAV_PROCESS_HANDLES)ptrTempNavStructHandles->NextAddress;
+	}
+
+	for (ULONG Idx = 1; Idx < NumOfStructElements; Idx++) {
+		PNAV_PROCESS_HANDLES ptrHeapProcHandles = *(PNAV_PROCESS_HANDLES*)((ULONG_PTR)ptrStructHandlesArr + 
+			(ULONG_PTR)Idx * sizeof(PNAV_PROCESS_HANDLES));
+
+		HeapFree(GetProcessHeap(), NULL, (LPVOID)ptrHeapProcHandles);
+	}
+
+	HeapFree(GetProcessHeap(), NULL, ptrStructHandlesArr);
+
 	return TRUE;
 }
 
 int main()
 {
-
 	PNAV_PROCESS_HANDLES ptrNavHandles = (PNAV_PROCESS_HANDLES)HeapAlloc(
 		GetProcessHeap(), NULL, sizeof(NAV_PROCESS_HANDLES));
 
-	BOOL Status = NavGetProcessHandles(1464, ptrNavHandles);
+	PNAV_PROCESS_HANDLES origAddress = ptrNavHandles;
+
+	BOOL Status = NavGetProcessHandles(5768, ptrNavHandles);
+
+	//while (ptrNavHandles->NextAddress != NULL) {
+	//	ptrNavHandles = (PNAV_PROCESS_HANDLES)ptrNavHandles->NextAddress;
+	//	std::wcout << ptrNavHandles->PObjectTypeInformation->Name.Buffer << std::endl;
+	//}
+
+	BOOL NewStatus = NavFreeProcessHandles(origAddress);
+
 
 	while (ptrNavHandles->NextAddress != NULL) {
-		ptrNavHandles = (PNAV_PROCESS_HANDLES)ptrNavHandles->NextAddress;
-		std::wcout << ptrNavHandles->PObjectTypeInformation->Name.Buffer << std::endl;
+		//ptrNavHandles = (PNAV_PROCESS_HANDLES)ptrNavHandles->NextAddress;
+		//std::wcout << ptrNavHandles->PObjectTypeInformation->Name.Buffer << std::endl;
 	}
 
 	getchar();
