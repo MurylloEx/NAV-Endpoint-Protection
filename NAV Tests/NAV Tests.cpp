@@ -6,152 +6,68 @@
 #endif
 
 #include <iostream>
-#include <windows.h>
 
-#pragma comment(lib, "ntdll.lib")
+#include "nav/handles.h"
+#include "nav/memory.h"
+#include "nav/winapi.h"
 
-#define NT_SUCCESS(x) ((x) >= 0)
-#define STATUS_INFO_LENGTH_MISMATCH 0xc0000004
+LPTSTR NavQueryFileNameByHandle(HANDLE FileHandle) {
+	DWORD dwPathSize = 0x10 * sizeof(TCHAR);
+	LPTSTR lpFileName = (LPTSTR)NavAllocMem(dwPathSize);
 
-#define SystemHandleInformation 16
-#define ObjectBasicInformation 0
-#define ObjectNameInformation 1
-#define ObjectTypeInformation 2
+	ZeroMemory(lpFileName, dwPathSize);
 
-typedef NTSTATUS (NTAPI *PNtQuerySystemInformation)(
-	ULONG SystemInformationClass,
-	PVOID SystemInformation,
-	ULONG SystemInformationLength,
-	PULONG ReturnLength
-);
+	DWORD Status = GetFinalPathNameByHandle(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS);
 
-typedef NTSTATUS (NTAPI *PNtDuplicateObject)(
-	HANDLE SourceProcessHandle,
-	HANDLE SourceHandle,
-	HANDLE TargetProcessHandle,
-	PHANDLE TargetHandle,
-	ACCESS_MASK DesiredAccess,
-	ULONG Attributes,
-	ULONG Options
-);
+	if (Status == FALSE)
+		return FALSE;
 
-typedef NTSTATUS (NTAPI *PNtQueryObject)(
-	HANDLE ObjectHandle,
-	ULONG ObjectInformationClass,
-	PVOID ObjectInformation,
-	ULONG ObjectInformationLength,
-	PULONG ReturnLength
-);
+	if (Status > dwPathSize) {
+		dwPathSize = (Status + 1) * sizeof(TCHAR);
 
-typedef struct _UNICODE_STRING {
-	USHORT Length;
-	USHORT MaximumLength;
-	PWSTR Buffer;
-} UNICODE_STRING, *PUNICODE_STRING;
+		lpFileName = (LPTSTR)NavReAllocMem(lpFileName, dwPathSize);
 
-typedef struct _SYSTEM_HANDLE {
-	ULONG ProcessId;
-	BYTE ObjectTypeNumber;
-	BYTE Flags;
-	USHORT Handle;
-	PVOID Object;
-	ACCESS_MASK GrantedAccess;
-} SYSTEM_HANDLE, *PSYSTEM_HANDLE;
+		if (lpFileName == FALSE) {
+			return FALSE;
+		}
 
-typedef struct _SYSTEM_HANDLE_INFORMATION {
-	ULONG HandleCount;
-	SYSTEM_HANDLE Handles[1];
-} SYSTEM_HANDLE_INFORMATION, *PSYSTEM_HANDLE_INFORMATION;
-
-typedef enum _POOL_TYPE {
-	NonPagedPool,
-	PagedPool,
-	NonPagedPoolMustSucceed,
-	DontUseThisType,
-	NonPagedPoolCacheAligned,
-	PagedPoolCacheAligned,
-	NonPagedPoolCacheAlignedMustS
-} POOL_TYPE, *PPOOL_TYPE;
-
-typedef struct _OBJECT_TYPE_INFORMATION {
-	UNICODE_STRING Name;
-	ULONG TotalNumberOfObjects;
-	ULONG TotalNumberOfHandles;
-	ULONG TotalPagedPoolUsage;
-	ULONG TotalNonPagedPoolUsage;
-	ULONG TotalNamePoolUsage;
-	ULONG TotalHandleTableUsage;
-	ULONG HighWaterNumberOfObjects;
-	ULONG HighWaterNumberOfHandles;
-	ULONG HighWaterPagedPoolUsage;
-	ULONG HighWaterNonPagedPoolUsage;
-	ULONG HighWaterNamePoolUsage;
-	ULONG HighWaterHandleTableUsage;
-	ULONG InvalidAttributes;
-	GENERIC_MAPPING GenericMapping;
-	ULONG ValidAccess;
-	BOOLEAN SecurityRequired;
-	BOOLEAN MaintainHandleCount;
-	USHORT MaintainTypeList;
-	POOL_TYPE PoolType;
-	ULONG PagedPoolUsage;
-	ULONG NonPagedPoolUsage;
-} OBJECT_TYPE_INFORMATION, *POBJECT_TYPE_INFORMATION;
-
-typedef struct _SYSTEM_PROCESS_INFO {
-	ULONG                   NextEntryOffset;
-	ULONG                   NumberOfThreads;
-	LARGE_INTEGER           Reserved[3];
-	LARGE_INTEGER           CreateTime;
-	LARGE_INTEGER           UserTime;
-	LARGE_INTEGER           KernelTime;
-	UNICODE_STRING          ImageName;
-	ULONG                   BasePriority;
-	HANDLE                  ProcessId;
-	HANDLE                  InheritedFromProcessId;
-} SYSTEM_PROCESS_INFO, *PSYSTEM_PROCESS_INFO;
-
-typedef struct _NAV_PROCESS_HANDLES {
-	POBJECT_TYPE_INFORMATION PObjectTypeInformation;
-	PSYSTEM_HANDLE Handle;
-	LPVOID NextAddress;
-} NAV_PROCESS_HANDLES, *PNAV_PROCESS_HANDLES;
-
-LPVOID NavGetFunctionPtr(_In_ LPSTR LibraryName, _In_ LPSTR FunctionName) {
-	HMODULE LibraryHandle = GetModuleHandleA(LibraryName);
-	FARPROC ProcAddress = GetProcAddress(LibraryHandle, FunctionName);
-	//CloseHandle(LibraryHandle);
-	return ProcAddress;
+		if (GetFinalPathNameByHandle(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS) == FALSE) {
+			return FALSE;
+		}
+		else {
+			return lpFileName;
+		}
+	}
+	else {
+		return lpFileName;
+	}
 }
 
 BOOL NavGetProcessHandles(_In_ ULONG ProcessId, _Out_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct) {
-	PNtQuerySystemInformation NtQuerySystemInformation = (PNtQuerySystemInformation)NavGetFunctionPtr(
-		(LPSTR)"NTDLL.DLL", 
-		(LPSTR)"NtQuerySystemInformation"
-	);
-
-	PNtDuplicateObject NtDuplicateObject = (PNtDuplicateObject)NavGetFunctionPtr(
-		(LPSTR)"NTDLL.DLL", 
-		(LPSTR)"NtDuplicateObject"
-	);
-
-	PNtQueryObject NtQueryObject = (PNtQueryObject)NavGetFunctionPtr(
-		(LPSTR)"NTDLL.DLL", 
-		(LPSTR)"NtQueryObject"
-	);
+	/*Load and retrieve the address of NtQuerySystemInformation API*/
+	PNtQuerySystemInformation NtQuerySystemInformation = (PNtQuerySystemInformation)NavGetProcAddress(NTDLL, NtQuerySystemInformationName);
+	
+	/*Load and retrieve the address of NtDuplicateObject API*/
+	PNtDuplicateObject NtDuplicateObject = (PNtDuplicateObject)NavGetProcAddress(NTDLL, NtDuplicateObjectName);
+	
+	/*Load and retrieve the address of NtQueryObject API*/
+	PNtQueryObject NtQueryObject = (PNtQueryObject)NavGetProcAddress(NTDLL, NtQueryObjectName);
 
 	NTSTATUS Status;
 	ULONG BufferSize = 0x20000;
 	ULONG ReturnLength = 0;
+	BOOLEAN IsFirstNode = TRUE;
 
-	PSYSTEM_HANDLE_INFORMATION PtrHandleInformation =
-		(PSYSTEM_HANDLE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)BufferSize);
+	/*Alloc initial buffer for retrieve system handles*/
+	PSYSTEM_HANDLE_INFORMATION PtrHandleInformation = (PSYSTEM_HANDLE_INFORMATION)NavAllocMem(BufferSize);
 
 	/*Error while allocating memory*/
 	if (PtrHandleInformation == NULL) {
 		return GetLastError();
 	}
 
+	/*Open target process to get his handle and duplicate 
+	all another handles associated to it*/
 	HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE, FALSE, ProcessId);
 
 	/*Error while opening the process*/
@@ -159,15 +75,16 @@ BOOL NavGetProcessHandles(_In_ ULONG ProcessId, _Out_ PNAV_PROCESS_HANDLES lpNav
 		return GetLastError();
 	}
 
+	/*Call NtQuerySystemInformation to retrieve all system handles*/
 	while (Status = NtQuerySystemInformation(
 		SystemHandleInformation,
 		PtrHandleInformation,
 		BufferSize, &BufferSize
 	) == STATUS_INFO_LENGTH_MISMATCH) {
 		BufferSize += 0x1000;
-		PtrHandleInformation = (PSYSTEM_HANDLE_INFORMATION)HeapReAlloc(
-			GetProcessHeap(), HEAP_ZERO_MEMORY, PtrHandleInformation, (SIZE_T)BufferSize
-		);
+		/*If the BufferSize wasn't enough, realloc all memory block with 
+		additional size of 4096 bytes and try again*/
+		PtrHandleInformation = (PSYSTEM_HANDLE_INFORMATION)NavReAllocMem(PtrHandleInformation, BufferSize);
 	}
 
 	/*Cannot retrieve Handle information of the target process*/
@@ -184,8 +101,7 @@ BOOL NavGetProcessHandles(_In_ ULONG ProcessId, _Out_ PNAV_PROCESS_HANDLES lpNav
 		ULONG QueryBufferSize = 0x50;
 		ULONG RetriesCount = 0;
 		BOOL QueryStatus = FALSE;
-		POBJECT_TYPE_INFORMATION PtrObjectInformation = (POBJECT_TYPE_INFORMATION)HeapAlloc(
-			GetProcessHeap(), HEAP_ZERO_MEMORY, QueryBufferSize);
+		POBJECT_TYPE_INFORMATION PtrObjectInformation = (POBJECT_TYPE_INFORMATION)NavAllocMem(QueryBufferSize);
 
 		/*Error while allocating memory*/
 		if (PtrObjectInformation == NULL) {
@@ -195,14 +111,14 @@ BOOL NavGetProcessHandles(_In_ ULONG ProcessId, _Out_ PNAV_PROCESS_HANDLES lpNav
 		if (Handle.ProcessId != ProcessId)
 			continue;
 
+		/*Duplicate the current handle of target process*/
 		if (!NT_SUCCESS(NtDuplicateObject(hProcess, (HANDLE)Handle.Handle, GetCurrentProcess(), &DuplicatedHandle, 0, 0, 0)))
 			continue;
 
 		while (RetriesCount < 15) {
 			if (!NT_SUCCESS(NtQueryObject(DuplicatedHandle, ObjectTypeInformation, PtrObjectInformation, QueryBufferSize, &QueryBufferSize))) {
 				RetriesCount++;
-				PtrObjectInformation = (POBJECT_TYPE_INFORMATION)HeapReAlloc(
-					GetProcessHeap(), HEAP_ZERO_MEMORY, PtrObjectInformation, QueryBufferSize);
+				PtrObjectInformation = (POBJECT_TYPE_INFORMATION)NavReAllocMem(PtrObjectInformation, QueryBufferSize);
 				/*Error while allocating memory*/
 				if (PtrObjectInformation == NULL) {
 					return GetLastError();
@@ -215,89 +131,115 @@ BOOL NavGetProcessHandles(_In_ ULONG ProcessId, _Out_ PNAV_PROCESS_HANDLES lpNav
 		}
 
 		if (QueryStatus == TRUE) {
-			PNAV_PROCESS_HANDLES NavProcessHandlesNewEntry = (PNAV_PROCESS_HANDLES)HeapAlloc(
-				GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(NAV_PROCESS_HANDLES));
-
-			NavProcessHandlesNewEntry->Handle = &Handle;
+			PNAV_PROCESS_HANDLES NavProcessHandlesNewEntry = (PNAV_PROCESS_HANDLES)NavAllocMem(sizeof(NAV_PROCESS_HANDLES));
+			
 			NavProcessHandlesNewEntry->PObjectTypeInformation = PtrObjectInformation;
+			NavProcessHandlesNewEntry->Handle = &Handle;
+			NavProcessHandlesNewEntry->DuplicatedHandle = DuplicatedHandle;
 			NavProcessHandlesNewEntry->NextAddress = NULL;
-
+			
 			PNAV_PROCESS_HANDLES NavCurrentProcessHandlesEntry = lpNavProcessHandlesStruct;
 
-			while (NavCurrentProcessHandlesEntry->NextAddress != NULL) {
-				NavCurrentProcessHandlesEntry = (PNAV_PROCESS_HANDLES)NavCurrentProcessHandlesEntry->NextAddress;
+			if (IsFirstNode == TRUE) {
+				*NavCurrentProcessHandlesEntry = *NavProcessHandlesNewEntry;
+				IsFirstNode = FALSE;
+				NavFreeMem(NavProcessHandlesNewEntry);
 			}
-			
-			NavCurrentProcessHandlesEntry->NextAddress = (LPVOID)NavProcessHandlesNewEntry;
+			else {
+				while (NavCurrentProcessHandlesEntry->NextAddress != NULL) {
+					NavCurrentProcessHandlesEntry = (PNAV_PROCESS_HANDLES)NavCurrentProcessHandlesEntry->NextAddress;
+				}
+				NavCurrentProcessHandlesEntry->NextAddress = (LPVOID)NavProcessHandlesNewEntry;
+			}
 		}
-
-		CloseHandle(DuplicatedHandle);
 
 	}
 
 	CloseHandle(hProcess);
-	HeapFree(GetProcessHeap(), NULL, PtrHandleInformation);
+	NavFreeMem(PtrHandleInformation);
 
 	return TRUE;
 }
 
 BOOL NavFreeProcessHandles(_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct) {
-	PNAV_PROCESS_HANDLES ptrTempNavStructHandles = lpNavProcessHandlesStruct;
+	PNAV_PROCESS_HANDLES TempStructHandles = lpNavProcessHandlesStruct;
+	PNAV_PROCESS_HANDLES LastStructHandles = lpNavProcessHandlesStruct;
+
 	ULONG NumOfStructElements = 1;
-	LPVOID ptrStructHandlesArr;
 
-	while (ptrTempNavStructHandles->NextAddress != NULL) {
+	BOOL Status = TRUE;
+
+	while (TempStructHandles->NextAddress != NULL) {
 		NumOfStructElements++;
-		ptrTempNavStructHandles = (PNAV_PROCESS_HANDLES)ptrTempNavStructHandles->NextAddress;
+		TempStructHandles = (PNAV_PROCESS_HANDLES)TempStructHandles->NextAddress;
 	}
 
-	ptrStructHandlesArr = HeapAlloc(
-		GetProcessHeap(), HEAP_ZERO_MEMORY, (ULONG_PTR)NumOfStructElements * sizeof(PNAV_PROCESS_HANDLES));
+	TempStructHandles = lpNavProcessHandlesStruct;
 
-	ptrTempNavStructHandles = lpNavProcessHandlesStruct;
-
-	*((PNAV_PROCESS_HANDLES*)ptrStructHandlesArr) = lpNavProcessHandlesStruct;
-
-	for (ULONG Idx = 1; Idx < NumOfStructElements; Idx++) {
-		PNAV_PROCESS_HANDLES* offsetAddress = ((PNAV_PROCESS_HANDLES*)((ULONG_PTR)ptrStructHandlesArr + 
-			(ULONG_PTR)Idx * sizeof(PNAV_PROCESS_HANDLES)));
-		*offsetAddress = ptrTempNavStructHandles;
-		ptrTempNavStructHandles = (PNAV_PROCESS_HANDLES)ptrTempNavStructHandles->NextAddress;
+	for (ULONG Idx = 0; Idx < NumOfStructElements; Idx++) {
+		ZeroMemory(LastStructHandles, sizeof(NAV_PROCESS_HANDLES));
+		if ((NavFreeMem(LastStructHandles) != TRUE) && (Status == TRUE)) {
+			Status = FALSE;
+		}
+		LastStructHandles = TempStructHandles;
+		TempStructHandles = (PNAV_PROCESS_HANDLES)TempStructHandles->NextAddress;
 	}
 
-	for (ULONG Idx = 1; Idx < NumOfStructElements; Idx++) {
-		PNAV_PROCESS_HANDLES ptrHeapProcHandles = *(PNAV_PROCESS_HANDLES*)((ULONG_PTR)ptrStructHandlesArr + 
-			(ULONG_PTR)Idx * sizeof(PNAV_PROCESS_HANDLES));
-
-		HeapFree(GetProcessHeap(), NULL, (LPVOID)ptrHeapProcHandles);
+	if ((NavFreeMem(TempStructHandles) != TRUE) && (Status == TRUE)) {
+		Status = FALSE;
 	}
 
-	HeapFree(GetProcessHeap(), NULL, ptrStructHandlesArr);
+	return Status;
+}
+
+BOOL NavGetFilesByProcessHandles(_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct) {
+	PNAV_PROCESS_HANDLES CurrentHandleStruct = lpNavProcessHandlesStruct;
+	
+	if (_tcscmp(CurrentHandleStruct->PObjectTypeInformation->Name.Buffer , L"File") == 0) {
+		//Found the first File handle
+		printf("Found");
+	}
+
+	while (CurrentHandleStruct->NextAddress != NULL) {
+		if (_tcscmp(CurrentHandleStruct->PObjectTypeInformation->Name.Buffer, L"File") != 0) {
+			CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
+			continue;
+		}
+		//Found a file Handle
+		LPTSTR lpFileName = NavQueryFileNameByHandle(CurrentHandleStruct->DuplicatedHandle);
+		if (lpFileName == NULL) {
+			CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
+			continue;
+		}
+		std::wcout << lpFileName << std::endl;
+		CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
+	}
 
 	return TRUE;
 }
 
+
+
 int main()
 {
-	PNAV_PROCESS_HANDLES ptrNavHandles = (PNAV_PROCESS_HANDLES)HeapAlloc(
-		GetProcessHeap(), NULL, sizeof(NAV_PROCESS_HANDLES));
 
-	PNAV_PROCESS_HANDLES origAddress = ptrNavHandles;
+	PNAV_PROCESS_HANDLES ptrNavHandles = (PNAV_PROCESS_HANDLES)NavAllocMem(sizeof(NAV_PROCESS_HANDLES));
 
 	BOOL Status = NavGetProcessHandles(5768, ptrNavHandles);
+	//BOOL NewStatus = NavFreeProcessHandles(ptrNavHandles);
 
-	//while (ptrNavHandles->NextAddress != NULL) {
-	//	ptrNavHandles = (PNAV_PROCESS_HANDLES)ptrNavHandles->NextAddress;
-	//	std::wcout << ptrNavHandles->PObjectTypeInformation->Name.Buffer << std::endl;
-	//}
+	NavGetFilesByProcessHandles(ptrNavHandles);
 
-	BOOL NewStatus = NavFreeProcessHandles(origAddress);
 
+
+	std::wcout << ptrNavHandles->PObjectTypeInformation->Name.Buffer << std::endl;
 
 	while (ptrNavHandles->NextAddress != NULL) {
-		//ptrNavHandles = (PNAV_PROCESS_HANDLES)ptrNavHandles->NextAddress;
-		//std::wcout << ptrNavHandles->PObjectTypeInformation->Name.Buffer << std::endl;
+		ptrNavHandles = (PNAV_PROCESS_HANDLES)ptrNavHandles->NextAddress;
+		std::wcout << ptrNavHandles->PObjectTypeInformation->Name.Buffer << std::endl;
 	}
+
+
 
 	getchar();
 	return ERROR_SUCCESS;
