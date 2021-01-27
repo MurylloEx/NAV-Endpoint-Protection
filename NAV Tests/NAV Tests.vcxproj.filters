@@ -13,10 +13,30 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\nav">
+      <UniqueIdentifier>{e23aa0dd-e103-4e87-9bfa-48e1ccf42709}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NAV Tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="nav\memory.cpp">
+      <Filter>Header Files\nav</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\winapi.cpp">
+      <Filter>Header Files\nav</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="nav\handles.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\memory.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\winapi.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
