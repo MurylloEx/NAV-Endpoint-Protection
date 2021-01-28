@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Windows.h>
+#include "winapi.h"
 
 LPVOID NavAllocMem(SIZE_T SizeOfBlock);
 LPVOID NavReAllocMem(LPVOID BlockAddress, SIZE_T NewSize);
