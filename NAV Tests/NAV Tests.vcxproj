@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="NAV Tests.cpp" />
+    <ClCompile Include="nav\handles.cpp" />
     <ClCompile Include="nav\memory.cpp" />
     <ClCompile Include="nav\winapi.cpp" />
   </ItemGroup>

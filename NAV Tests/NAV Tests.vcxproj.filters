@@ -27,6 +27,9 @@
     <ClCompile Include="nav\winapi.cpp">
       <Filter>Header Files\nav</Filter>
     </ClCompile>
+    <ClCompile Include="nav\handles.cpp">
+      <Filter>Header Files\nav</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nav\handles.h">
