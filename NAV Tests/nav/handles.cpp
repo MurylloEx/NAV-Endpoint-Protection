@@ -1,5 +1,28 @@
 #include "handles.h"
 
+LPWSTR NavQueryProcessPathNameByHandle(
+	_In_ HANDLE ProcessHandle) 
+{
+	DWORD PathSize = MAX_PATH + 1;
+	LPWSTR PathBuffer = (LPWSTR)NavAllocMem(PathSize * sizeof(WCHAR));
+	if (PathBuffer == NULL) {
+		NavFreeMem(PathBuffer);
+		return FALSE;
+	}
+	BOOL Status = QueryFullProcessImageNameW(ProcessHandle, NULL, PathBuffer, &PathSize);
+	if (Status != FALSE) {
+		return PathBuffer;
+	}
+	NavFreeMem(PathBuffer);
+	return NULL;
+}
+
+DWORD NavQueryProcessIdByHandle(
+	_In_ HANDLE ProcessHandle) 
+{
+	return GetProcessId(ProcessHandle);
+}
+
 LPWSTR NavQueryKeyNameByHandle(
 	_In_ HANDLE KeyHandle)
 {
@@ -25,32 +48,38 @@ LPWSTR NavQueryKeyNameByHandle(
 	return FALSE;
 }
 
-LPTSTR NavQueryFileNameByHandle(
-	_In_ HANDLE FileHandle) {
+LPWSTR NavQueryFileNameByHandle(
+	_In_ HANDLE FileHandle) 
+{
 	DWORD dwPathSize = (DWORD)0x10;
-	LPTSTR lpFileName = (LPTSTR)NavAllocMem((dwPathSize + 1) * sizeof(TCHAR));
+	LPWSTR lpFileName = (LPWSTR)NavAllocMem((dwPathSize + 1) * sizeof(WCHAR));
 
-	ZeroMemory(lpFileName, (dwPathSize + 1) * sizeof(TCHAR));
+	ZeroMemory(lpFileName, (dwPathSize + 1) * sizeof(WCHAR));
 
-	if (FileHandle == INVALID_HANDLE_VALUE)
+	if (FileHandle == INVALID_HANDLE_VALUE) {
+		NavFreeMem(lpFileName);
 		return FALSE;
+	}
 
-	DWORD Status = GetFinalPathNameByHandle(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS);
+	DWORD Status = GetFinalPathNameByHandleW(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS);
 
-	if (Status == FALSE)
+	if (Status == FALSE) {
+		NavFreeMem(lpFileName);
 		return FALSE;
+	}
 
 	if (Status > dwPathSize) {
 		dwPathSize = (DWORD)Status;
-		lpFileName = (LPTSTR)(NavReAllocMem((LPVOID)lpFileName, (dwPathSize + 1) * sizeof(TCHAR)));
+		lpFileName = (LPWSTR)NavReAllocMem((LPVOID)lpFileName, (dwPathSize + 1) * sizeof(WCHAR));
 
 		if (lpFileName == FALSE) {
 			return FALSE;
 		}
 
-		ZeroMemory(lpFileName, (dwPathSize + 1) * sizeof(TCHAR));
+		ZeroMemory(lpFileName, (dwPathSize + 1) * sizeof(WCHAR));
 
-		if (GetFinalPathNameByHandle(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS) == FALSE) {
+		if (GetFinalPathNameByHandleW(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS) == FALSE) {
+			NavFreeMem(lpFileName);
 			return FALSE;
 		}
 		else {
@@ -64,7 +93,8 @@ LPTSTR NavQueryFileNameByHandle(
 
 BOOL NavGetProcessHandles(
 	_In_ ULONG ProcessId,
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct) {
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles) 
+{
 
 	NTSTATUS Status;
 	ULONG BufferSize = 0x20000;
@@ -72,7 +102,7 @@ BOOL NavGetProcessHandles(
 	BOOLEAN IsFirstNode = TRUE;
 
 	/*Fill buffer with zeros*/
-	RtlZeroMemory((LPVOID)lpNavProcessHandlesStruct, sizeof(NAV_PROCESS_HANDLES));
+	RtlZeroMemory((LPVOID)ProcessHandles, sizeof(NAV_PROCESS_HANDLES));
 
 	/*Alloc initial buffer for retrieve system handles*/
 	PSYSTEM_HANDLE_INFORMATION PtrHandleInformation = (PSYSTEM_HANDLE_INFORMATION)NavAllocMem(BufferSize);
@@ -117,7 +147,8 @@ BOOL NavGetProcessHandles(
 		HANDLE DuplicatedHandle;
 
 		/*Duplicate the current handle of target process*/
-		if (!NT_SUCCESS(NtDuplicateObject(hProcess, (HANDLE)PtrHandleInformation->Handles[Idx].Handle, GetCurrentProcess(), &DuplicatedHandle, 0, 0, 0))) {
+		if (!NT_SUCCESS(NtDuplicateObject(hProcess, (HANDLE)PtrHandleInformation->Handles[Idx].Handle, GetCurrentProcess(), &DuplicatedHandle, 0, 0, 
+			DUPLICATE_SAME_ACCESS))) {
 			continue;
 		}
 
@@ -165,7 +196,7 @@ BOOL NavGetProcessHandles(
 			NavProcessHandlesNewEntry->DuplicatedHandle = DuplicatedHandle;
 			NavProcessHandlesNewEntry->NextAddress = NULL;
 
-			PNAV_PROCESS_HANDLES NavCurrentProcessHandlesEntry = lpNavProcessHandlesStruct;
+			PNAV_PROCESS_HANDLES NavCurrentProcessHandlesEntry = ProcessHandles;
 
 			if (IsFirstNode == TRUE) {
 				*NavCurrentProcessHandlesEntry = *NavProcessHandlesNewEntry;
@@ -192,9 +223,9 @@ BOOL NavGetProcessHandles(
 }
 
 BOOL NavFreeProcessHandles(
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct) {
-	PNAV_PROCESS_HANDLES TempStructHandles = lpNavProcessHandlesStruct;
-	PNAV_PROCESS_HANDLES LastStructHandles = lpNavProcessHandlesStruct;
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles) {
+	PNAV_PROCESS_HANDLES TempStructHandles = ProcessHandles;
+	PNAV_PROCESS_HANDLES LastStructHandles = ProcessHandles;
 
 	ULONG NumOfStructElements = 1;
 
@@ -205,7 +236,7 @@ BOOL NavFreeProcessHandles(
 		TempStructHandles = (PNAV_PROCESS_HANDLES)TempStructHandles->NextAddress;
 	}
 
-	TempStructHandles = lpNavProcessHandlesStruct;
+	TempStructHandles = ProcessHandles;
 
 	for (ULONG Idx = 0; Idx < NumOfStructElements; Idx++) {
 		LastStructHandles = TempStructHandles;
@@ -221,24 +252,25 @@ BOOL NavFreeProcessHandles(
 }
 
 BOOL NavGetFilesByProcessHandles(
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct,
-	_In_ PNAV_PROCESS_OPEN_FILES lpNavProcessOpenFilesStruct) {
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles,
+	_In_ PNAV_PROCESS_OPEN_FILES ProcessFiles) 
+{
 
 	BOOL Status = FALSE;
 	BOOL IsFirstNode = TRUE;
-	PNAV_PROCESS_HANDLES CurrentHandleStruct = lpNavProcessHandlesStruct;
+	PNAV_PROCESS_HANDLES CurrentHandleStruct = ProcessHandles;
 
-	RtlZeroMemory(lpNavProcessOpenFilesStruct, sizeof(NAV_PROCESS_OPEN_FILES));
+	RtlZeroMemory(ProcessFiles, sizeof(NAV_PROCESS_OPEN_FILES));
 
 	if (_tcscmp(CurrentHandleStruct->PObjectTypeInformation->Name.Buffer, L"File") == 0) {
-		LPTSTR lpFileName = NavQueryFileNameByHandle(CurrentHandleStruct->DuplicatedHandle);
-		if (lpFileName != NULL) {
+		LPWSTR lpFileName = NavQueryFileNameByHandle(CurrentHandleStruct->DuplicatedHandle);
+		if (lpFileName != FALSE) {
 			Status = TRUE;
 			IsFirstNode = FALSE;
 			PNAV_PROCESS_OPEN_FILES NavNewOpenFilesStruct =
 				(PNAV_PROCESS_OPEN_FILES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_FILES));
 			NavNewOpenFilesStruct->FilePathName = lpFileName;
-			lpNavProcessOpenFilesStruct->NextAddress = (LPVOID)NavNewOpenFilesStruct;
+			ProcessFiles->NextAddress = (LPVOID)NavNewOpenFilesStruct;
 		}
 	}
 
@@ -248,16 +280,16 @@ BOOL NavGetFilesByProcessHandles(
 			continue;
 		}
 
-		LPTSTR lpFileName = NavQueryFileNameByHandle(CurrentHandleStruct->DuplicatedHandle);
+		LPWSTR lpFileName = NavQueryFileNameByHandle(CurrentHandleStruct->DuplicatedHandle);
 
-		if (lpFileName == NULL) {
+		if (lpFileName == FALSE) {
 			CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
 			continue;
 		}
 
 		Status = TRUE;
 
-		PNAV_PROCESS_OPEN_FILES TempOpenFilesPointer = lpNavProcessOpenFilesStruct;
+		PNAV_PROCESS_OPEN_FILES TempOpenFilesPointer = ProcessFiles;
 		PNAV_PROCESS_OPEN_FILES NavNewOpenFilesStruct =
 			(PNAV_PROCESS_OPEN_FILES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_FILES));
 
@@ -267,6 +299,7 @@ BOOL NavGetFilesByProcessHandles(
 		if (IsFirstNode == TRUE) {
 			IsFirstNode = FALSE;
 			*TempOpenFilesPointer = *NavNewOpenFilesStruct;
+			NavFreeMem(NavNewOpenFilesStruct);
 		}
 		else {
 			while (TempOpenFilesPointer->NextAddress != NULL) {
@@ -282,10 +315,11 @@ BOOL NavGetFilesByProcessHandles(
 }
 
 BOOL NavFreeOpenFiles(
-	_In_ PNAV_PROCESS_OPEN_FILES lpNavProcessOpenFilesStruct) {
+	_In_ PNAV_PROCESS_OPEN_FILES ProcessFiles) 
+{
 
-	PNAV_PROCESS_OPEN_FILES TempFilesStruct = lpNavProcessOpenFilesStruct;
-	PNAV_PROCESS_OPEN_FILES LastFilesStruct = lpNavProcessOpenFilesStruct;
+	PNAV_PROCESS_OPEN_FILES TempFilesStruct = ProcessFiles;
+	PNAV_PROCESS_OPEN_FILES LastFilesStruct = ProcessFiles;
 
 	ULONG NumOfStructElements = 1;
 
@@ -296,7 +330,7 @@ BOOL NavFreeOpenFiles(
 		TempFilesStruct = (PNAV_PROCESS_OPEN_FILES)TempFilesStruct->NextAddress;
 	}
 
-	TempFilesStruct = lpNavProcessOpenFilesStruct;
+	TempFilesStruct = ProcessFiles;
 
 	for (ULONG Idx = 0; Idx < NumOfStructElements; Idx++) {
 
@@ -312,26 +346,18 @@ BOOL NavFreeOpenFiles(
 		}
 	}
 
-
-	if ((NavFreeMem(TempFilesStruct) != TRUE) && (Status == TRUE)) {
-		Status = FALSE;
-	}
-
 	return Status;
 }
 
-
-
-
 BOOL NavGetKeysByProcessHandles(
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct,
-	_In_ PNAV_PROCESS_OPEN_KEYS lpNavProcessOpenKeysStruct)
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles,
+	_In_ PNAV_PROCESS_OPEN_KEYS ProcessKeys)
 {
 	BOOL Status = FALSE;
 	BOOL IsFirstNode = TRUE;
-	PNAV_PROCESS_HANDLES CurrentHandleStruct = lpNavProcessHandlesStruct;
+	PNAV_PROCESS_HANDLES CurrentHandleStruct = ProcessHandles;
 
-	RtlZeroMemory(lpNavProcessOpenKeysStruct, sizeof(NAV_PROCESS_OPEN_KEYS));
+	RtlZeroMemory(ProcessKeys, sizeof(NAV_PROCESS_OPEN_KEYS));
 
 	if (_tcscmp(CurrentHandleStruct->PObjectTypeInformation->Name.Buffer, L"Key") == 0) {
 		LPWSTR KeyPathName = NavQueryKeyNameByHandle(CurrentHandleStruct->DuplicatedHandle);
@@ -341,7 +367,7 @@ BOOL NavGetKeysByProcessHandles(
 			PNAV_PROCESS_OPEN_KEYS NavNewOpenKeysStruct =
 				(PNAV_PROCESS_OPEN_KEYS)NavAllocMem(sizeof(NAV_PROCESS_OPEN_KEYS));
 			NavNewOpenKeysStruct->KeyPathName = KeyPathName;
-			lpNavProcessOpenKeysStruct->NextAddress = (LPVOID)NavNewOpenKeysStruct;
+			ProcessKeys->NextAddress = (LPVOID)NavNewOpenKeysStruct;
 		}
 	}
 
@@ -360,7 +386,7 @@ BOOL NavGetKeysByProcessHandles(
 
 		Status = TRUE;
 
-		PNAV_PROCESS_OPEN_KEYS TempOpenKeysPointer = lpNavProcessOpenKeysStruct;
+		PNAV_PROCESS_OPEN_KEYS TempOpenKeysPointer = ProcessKeys;
 		PNAV_PROCESS_OPEN_KEYS NavNewOpenKeysStruct =
 			(PNAV_PROCESS_OPEN_KEYS)NavAllocMem(sizeof(NAV_PROCESS_OPEN_KEYS));
 
@@ -370,6 +396,7 @@ BOOL NavGetKeysByProcessHandles(
 		if (IsFirstNode == TRUE) {
 			IsFirstNode = FALSE;
 			*TempOpenKeysPointer = *NavNewOpenKeysStruct;
+			NavFreeMem(NavNewOpenKeysStruct);
 		}
 		else {
 			while (TempOpenKeysPointer->NextAddress != NULL) {
@@ -379,6 +406,139 @@ BOOL NavGetKeysByProcessHandles(
 		}
 
 		CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
+	}
+
+	return Status;
+}
+
+BOOL NavFreeOpenKeys(
+	_In_ PNAV_PROCESS_OPEN_KEYS ProcessKeys) 
+{
+
+	PNAV_PROCESS_OPEN_KEYS TempKeysStruct = ProcessKeys;
+	PNAV_PROCESS_OPEN_KEYS LastKeysStruct = ProcessKeys;
+
+	ULONG NumOfStructElements = 1;
+
+	BOOL Status = TRUE;
+
+	while (TempKeysStruct->NextAddress != NULL) {
+		NumOfStructElements++;
+		TempKeysStruct = (PNAV_PROCESS_OPEN_KEYS)TempKeysStruct->NextAddress;
+	}
+
+	TempKeysStruct = ProcessKeys;
+
+	for (ULONG Idx = 0; Idx < NumOfStructElements; Idx++) {
+
+		LastKeysStruct = TempKeysStruct;
+		TempKeysStruct = (PNAV_PROCESS_OPEN_KEYS)TempKeysStruct->NextAddress;
+
+		NavFreeMem(QUERY_KEY_PATH_TO_BASE(LastKeysStruct->KeyPathName));
+
+		ZeroMemory(LastKeysStruct, sizeof(NAV_PROCESS_OPEN_KEYS));
+
+		if ((NavFreeMem(LastKeysStruct) != TRUE) && (Status == TRUE)) {
+			Status = FALSE;
+		}
+	}
+
+	return Status;
+}
+
+BOOL NavGetProcessesByProcessHandles(
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles,
+	_In_ PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer)
+{
+	BOOL Status = FALSE;
+	BOOL IsFirstNode = TRUE;
+	PNAV_PROCESS_HANDLES CurrentHandleStruct = ProcessHandles;
+
+	RtlZeroMemory(ProcessBuffer, sizeof(NAV_PROCESS_OPEN_PROCESSES));
+
+	if (_tcscmp(CurrentHandleStruct->PObjectTypeInformation->Name.Buffer, L"Process") == 0) {
+		LPWSTR FilePathName = NavQueryKeyNameByHandle(CurrentHandleStruct->DuplicatedHandle);
+		if (FilePathName != NULL) {
+			Status = TRUE;
+			IsFirstNode = FALSE;
+			PNAV_PROCESS_OPEN_PROCESSES NavNewOpenProcessesStruct =
+				(PNAV_PROCESS_OPEN_PROCESSES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_PROCESSES));
+			NavNewOpenProcessesStruct->FilePathName = FilePathName;
+			ProcessBuffer->NextAddress = (LPVOID)NavNewOpenProcessesStruct;
+		}
+	}
+
+	while (CurrentHandleStruct->NextAddress != NULL) {
+		if (_tcscmp(CurrentHandleStruct->PObjectTypeInformation->Name.Buffer, L"Process") != 0) {
+			CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
+			continue;
+		}
+
+		LPWSTR FilePathName = NavQueryProcessPathNameByHandle(CurrentHandleStruct->DuplicatedHandle);
+		DWORD ProcessId		= NavQueryProcessIdByHandle(CurrentHandleStruct->DuplicatedHandle);
+
+		if (FilePathName == NULL) {
+			CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
+			continue;
+		}
+
+		Status = TRUE;
+
+		PNAV_PROCESS_OPEN_PROCESSES TempOpenProcessesPointer = ProcessBuffer;
+		PNAV_PROCESS_OPEN_PROCESSES NavNewOpenProcessesStruct =
+			(PNAV_PROCESS_OPEN_PROCESSES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_PROCESSES));
+
+		NavNewOpenProcessesStruct->FilePathName = FilePathName;
+		NavNewOpenProcessesStruct->ProcessId = ProcessId;
+		NavNewOpenProcessesStruct->NextAddress = NULL;
+
+		if (IsFirstNode == TRUE) {
+			IsFirstNode = FALSE;
+			*TempOpenProcessesPointer = *NavNewOpenProcessesStruct;
+			NavFreeMem(NavNewOpenProcessesStruct);
+		}
+		else {
+			while (TempOpenProcessesPointer->NextAddress != NULL) {
+				TempOpenProcessesPointer = (PNAV_PROCESS_OPEN_PROCESSES)TempOpenProcessesPointer->NextAddress;
+			}
+			TempOpenProcessesPointer->NextAddress = (LPVOID)NavNewOpenProcessesStruct;
+		}
+
+		CurrentHandleStruct = (PNAV_PROCESS_HANDLES)CurrentHandleStruct->NextAddress;
+	}
+
+	return Status;
+}
+
+BOOL NavFreeOpenProcesses(
+	_In_ PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer) 
+{
+
+	PNAV_PROCESS_OPEN_PROCESSES TempProcessesStruct = ProcessBuffer;
+	PNAV_PROCESS_OPEN_PROCESSES LastProcessesStruct = ProcessBuffer;
+
+	ULONG NumOfStructElements = 1;
+
+	BOOL Status = TRUE;
+
+	while (TempProcessesStruct->NextAddress != NULL) {
+		NumOfStructElements++;
+		TempProcessesStruct = (PNAV_PROCESS_OPEN_PROCESSES)TempProcessesStruct->NextAddress;
+	}
+
+	TempProcessesStruct = ProcessBuffer;
+
+	for (ULONG Idx = 0; Idx < NumOfStructElements; Idx++) {
+		LastProcessesStruct = TempProcessesStruct;
+		TempProcessesStruct = (PNAV_PROCESS_OPEN_PROCESSES)TempProcessesStruct->NextAddress;
+
+		NavFreeMem((LPVOID)(LastProcessesStruct->FilePathName));
+
+		ZeroMemory(LastProcessesStruct, sizeof(NAV_PROCESS_OPEN_PROCESSES));
+
+		if ((NavFreeMem(LastProcessesStruct) != TRUE) && (Status == TRUE)) {
+			Status = FALSE;
+		}
 	}
 
 	return Status;
