@@ -14,47 +14,44 @@ void tests() {
 	//while (true) {
 		//valor++;
 
-	PNAV_PROCESS_HANDLES ptrNavHandles = (PNAV_PROCESS_HANDLES)NavAllocMem(sizeof(NAV_PROCESS_HANDLES));
-	NavGetProcessHandles(17268, ptrNavHandles);
+	PNAV_PROCESS_HANDLES handles = (PNAV_PROCESS_HANDLES)NavAllocMem(sizeof(NAV_PROCESS_HANDLES));
+	NavGetProcessHandles(6796, handles);
 
 	PNAV_PROCESS_OPEN_FILES files = (PNAV_PROCESS_OPEN_FILES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_FILES));
-	NavGetFilesByProcessHandles(ptrNavHandles, files);
+	NavGetFilesByProcessHandles(handles, files);
 
-	std::wcout << files->FilePathName << std::endl;
+	PNAV_PROCESS_OPEN_KEYS keys = (PNAV_PROCESS_OPEN_KEYS)NavAllocMem(sizeof(NAV_PROCESS_OPEN_KEYS));
+	NavGetKeysByProcessHandles(handles, keys);
 
-	while (files->NextAddress != NULL) {
-		files = (PNAV_PROCESS_OPEN_FILES)files->NextAddress;
-		std::wcout << files->FilePathName << std::endl;
-	}
+	PNAV_PROCESS_OPEN_PROCESSES processes = (PNAV_PROCESS_OPEN_PROCESSES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_PROCESSES));
+	NavGetProcessesByProcessHandles(handles, processes);
 
+	//wprintf(L"%s\n", ptrNavHandles->PObjectTypeInformation->Name.Buffer);
+
+	//while (ptrNavHandles->NextAddress != NULL) {
+		//ptrNavHandles = (PNAV_PROCESS_HANDLES)ptrNavHandles->NextAddress;
+		//wprintf(L"%s\n", ptrNavHandles->PObjectTypeInformation->Name.Buffer);
+	//}
+
+	NavFreeOpenProcesses(processes);
+	NavFreeOpenKeys(keys);
 	NavFreeOpenFiles(files);
-	NavFreeProcessHandles(ptrNavHandles);
+	NavFreeProcessHandles(handles);
 
 	//}
 }
 
 int main()
 {
-	PNAV_PROCESS_HANDLES ProcessHandles = (PNAV_PROCESS_HANDLES)NavAllocMem(sizeof(NAV_PROCESS_HANDLES));
-
-	NavGetProcessHandles(10548, ProcessHandles);
-
-	PNAV_PROCESS_OPEN_KEYS OpenKeys = (PNAV_PROCESS_OPEN_KEYS)NavAllocMem(sizeof(NAV_PROCESS_OPEN_KEYS));
-
-	NavGetKeysByProcessHandles(ProcessHandles, OpenKeys);
-
-	if (OpenKeys == NULL) {
-		printf("Failed to allocate new memory block.\n");
-		return EXIT_FAILURE;
-	}
-
-	wprintf(L"%s\n", OpenKeys->KeyPathName);
-
-	while (OpenKeys->NextAddress != NULL) {
-		OpenKeys = (PNAV_PROCESS_OPEN_KEYS)OpenKeys->NextAddress;
-		wprintf(L"%s\n", OpenKeys->KeyPathName);
+	for (int i = 0; i < 10; i++) {
+		tests();
 	}
 	
+	//HANDLE hProcess = OpenProcess(
+	//	PROCESS_ALL_ACCESS, FALSE, 6796);
+	
+	//wprintf_s(L"%s\n", NavQueryProcessPathNameById(hProcess));
+
 	getchar();
 	return ERROR_SUCCESS;
 }

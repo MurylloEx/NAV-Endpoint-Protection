@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vld.h>
 #include "winapi.h"
 #include "memory.h"
 #include <tchar.h>
@@ -13,7 +14,7 @@ typedef struct _NAV_PROCESS_HANDLES {
 } NAV_PROCESS_HANDLES, *PNAV_PROCESS_HANDLES;
 
 typedef struct _NAV_PROCESS_OPEN_FILES {
-	LPTSTR FilePathName;
+	LPWSTR FilePathName;
 	LPVOID NextAddress;
 } NAV_PROCESS_OPEN_FILES, *PNAV_PROCESS_OPEN_FILES;
 
@@ -22,31 +23,53 @@ typedef struct _NAV_PROCESS_OPEN_KEYS {
 	LPVOID NextAddress;
 } NAV_PROCESS_OPEN_KEYS, *PNAV_PROCESS_OPEN_KEYS;
 
+typedef struct _NAV_PROCESS_OPEN_PROCESSES {
+	LPWSTR FilePathName;
+	DWORD ProcessId;
+	LPVOID NextAddress;
+} NAV_PROCESS_OPEN_PROCESSES, *PNAV_PROCESS_OPEN_PROCESSES;
+
 /* NAV Macros definitions for NtQueryKey translations */
 #define QUERY_KEY_BASE_TO_PATH(P) ((LPWSTR)((ULONG_PTR)P + (2 * sizeof(WCHAR))))
-#define QUERY_KEY_PATH_TO_PATH(P) ((LPVOID)((ULONG_PTR)P - (2 * sizeof(WCHAR))))
+#define QUERY_KEY_PATH_TO_BASE(P) ((LPVOID)((ULONG_PTR)P - (2 * sizeof(WCHAR))))
 
 /* NAV exported functions */
-LPTSTR NavQueryKeyNameByHandle(
+LPWSTR NavQueryProcessPathNameByHandle(
+	_In_ HANDLE ProcessHandle);
+
+DWORD NavQueryProcessIdByHandle(
+	_In_ HANDLE ProcessHandle);
+
+LPWSTR NavQueryKeyNameByHandle(
 	_In_ HANDLE KeyHandle);
 
-LPTSTR NavQueryFileNameByHandle (
+LPWSTR NavQueryFileNameByHandle(
 	_In_ HANDLE FileHandle);
 
-BOOL NavGetProcessHandles (
-	_In_ ULONG ProcessId, 
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct);
+BOOL NavGetProcessHandles(
+	_In_ ULONG ProcessId,
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles);
 
-BOOL NavFreeProcessHandles (
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct);
+BOOL NavFreeProcessHandles(
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles);
 
-BOOL NavGetFilesByProcessHandles (
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct,
-	_In_ PNAV_PROCESS_OPEN_FILES lpNavProcessOpenFilesStruct);
+BOOL NavGetFilesByProcessHandles(
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles,
+	_In_ PNAV_PROCESS_OPEN_FILES ProcessFiles);
 
-BOOL NavFreeOpenFiles (
-	_In_ PNAV_PROCESS_OPEN_FILES lpNavProcessOpenFilesStruct);
+BOOL NavFreeOpenFiles(
+	_In_ PNAV_PROCESS_OPEN_FILES ProcessFiles);
 
 BOOL NavGetKeysByProcessHandles(
-	_In_ PNAV_PROCESS_HANDLES lpNavProcessHandlesStruct,
-	_In_ PNAV_PROCESS_OPEN_KEYS lpNavProcessOpenKeysStruct);
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles,
+	_In_ PNAV_PROCESS_OPEN_KEYS ProcessKeys);
+
+BOOL NavFreeOpenKeys(
+	_In_ PNAV_PROCESS_OPEN_KEYS ProcessKeys);
+
+BOOL NavGetProcessesByProcessHandles(
+	_In_ PNAV_PROCESS_HANDLES ProcessHandles,
+	_In_ PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer);
+
+BOOL NavFreeOpenProcesses(
+	_In_ PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer);
