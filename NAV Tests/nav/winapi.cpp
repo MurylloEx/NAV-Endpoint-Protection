@@ -85,3 +85,20 @@ NTSTATUS NTAPI NtQueryKey(
 		Length, 
 		ResultLength);
 }
+
+NTSTATUS NTAPI NtSetInformationProcess(
+	HANDLE	ProcessHandle,
+	ULONG	ProcessInformationClass,
+	PVOID	ProcessInformation,
+	ULONG	ProcessInformationLength)
+{
+	/*Load and retrieve the address of NtSetInformationProcess API*/
+	PNtSetInformationProcess VNtSetInformationProcess = 
+		(PNtSetInformationProcess)NavGetProcAddress(NTDLL, NtSetInformationProcessName);
+
+	return VNtSetInformationProcess(
+		ProcessHandle,
+		ProcessInformationClass,
+		ProcessInformation,
+		ProcessInformationLength);
+}

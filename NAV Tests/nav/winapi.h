@@ -13,6 +13,7 @@
 #define NtDuplicateObjectName			(LPSTR)"NtDuplicateObject"
 #define NtQueryObjectName				(LPSTR)"NtQueryObject"
 #define NtQueryKeyName					(LPSTR)"NtQueryKey"
+#define NtSetInformationProcessName		(LPSTR)"NtSetInformationProcess"
 
 /* NTSTATUS Macros */
 #define NT_SUCCESS(x) ((x) >= 0)
@@ -33,6 +34,8 @@
 #define ObjectBasicInformation 0
 #define ObjectNameInformation 1
 #define ObjectTypeInformation 2
+
+#define NT_CRITICAL_PROCESS 0x1d
 
 /* NT internal structures */
 typedef struct _UNICODE_STRING {
@@ -150,6 +153,12 @@ typedef NTSTATUS(NTAPI *PNtQueryKey)(
 	ULONG                 Length,
 	PULONG                ResultLength);
 
+typedef NTSTATUS(NTAPI *PNtSetInformationProcess)(
+	HANDLE	ProcessHandle,
+	ULONG	ProcessInformationClass,
+	PVOID	ProcessInformation,
+	ULONG	ProcessInformationLength);
+
 /* NAV exported functions */
 FARPROC NavGetProcAddress(_In_ LPSTR LibraryName, _In_ LPSTR FunctionName);
 
@@ -181,3 +190,9 @@ NTSTATUS NTAPI NtQueryKey(
 	PVOID                 KeyInformation,
 	ULONG                 Length,
 	PULONG                ResultLength);
+
+NTSTATUS NTAPI NtSetInformationProcess(
+	HANDLE	ProcessHandle,
+	ULONG	ProcessInformationClass,
+	PVOID	ProcessInformation,
+	ULONG	ProcessInformationLength);

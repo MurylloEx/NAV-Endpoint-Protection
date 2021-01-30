@@ -2,6 +2,6 @@
 
 #include "winapi.h"
 
-LPVOID NavAllocMem(SIZE_T SizeOfBlock);
-LPVOID NavReAllocMem(LPVOID BlockAddress, SIZE_T NewSize);
-BOOL NavFreeMem(LPVOID BlockAddress);
+LPVOID NavAllocMem(IN SIZE_T SizeOfBlock);
+LPVOID NavReAllocMem(IN LPVOID BlockAddress, IN SIZE_T NewSize);
+BOOL NavFreeMem(IN LPVOID BlockAddress);

@@ -2,22 +2,14 @@
 
 #include <iostream>
 
-LPVOID NavAllocMem(SIZE_T SizeOfBlock) {
-	//void* addr = malloc(SizeOfBlock);
-	//ZeroMemory(addr, SizeOfBlock);
-	//return addr;
+LPVOID NavAllocMem(IN SIZE_T SizeOfBlock) {
 	return HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, SizeOfBlock);
 }
 
-LPVOID NavReAllocMem(LPVOID BlockAddress, SIZE_T NewSize) {
-	//void* addr = realloc(BlockAddress, NewSize);
-	//ZeroMemory(addr, NewSize);
-	//return addr;
+LPVOID NavReAllocMem(IN LPVOID BlockAddress, IN SIZE_T NewSize) {
 	return HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, BlockAddress, NewSize);
 }
 
-BOOL NavFreeMem(LPVOID BlockAddress) {
-	//free(BlockAddress);
-	//return TRUE;
+BOOL NavFreeMem(IN LPVOID BlockAddress) {
 	return HeapFree(GetProcessHeap(), NULL, BlockAddress);
 }
