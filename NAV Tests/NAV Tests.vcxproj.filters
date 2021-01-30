@@ -30,6 +30,12 @@
     <ClCompile Include="nav\handles.cpp">
       <Filter>Header Files\nav</Filter>
     </ClCompile>
+    <ClCompile Include="nav\privileges.cpp">
+      <Filter>Header Files\nav</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\protection.cpp">
+      <Filter>Header Files\nav</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nav\handles.h">
@@ -39,6 +45,15 @@
       <Filter>Header Files\nav</Filter>
     </ClInclude>
     <ClInclude Include="nav\winapi.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\privileges.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\status.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\protection.h">
       <Filter>Header Files\nav</Filter>
     </ClInclude>
   </ItemGroup>
