@@ -28,6 +28,7 @@ int main()
 		printf("Successfully checked SE_DEBUG_NAME privilege\n");
 	}
 
+	getchar();
 	return ERROR_SUCCESS;
 }
 
