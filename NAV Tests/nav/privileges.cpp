@@ -25,6 +25,7 @@ NAVSTATUS NavEnableTokenPrivileges(
 	}
 
 	if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
+		SetLastError(NULL);
 		return NAV_PRIVILEGE_STATUS_NOT_ASSIGNED;
 	}
 
@@ -33,10 +34,16 @@ NAVSTATUS NavEnableTokenPrivileges(
 
 NAVSTATUS NavOpenProcessToken(
 	IN DWORD ProcessId,
-	OUT PHANDLE TokenHandle)
+	OUT PHANDLE TokenHandle,
+	IN DWORD TokenOptionalAccess)
 {
 	DWORD CurrentId = ProcessId;
+	DWORD TokenAccess = TOKEN_QUERY | TOKEN_QUERY_SOURCE | TOKEN_READ | 
+						TOKEN_ADJUST_PRIVILEGES | TOKEN_ADJUST_DEFAULT;
 	*TokenHandle = NULL;
+
+	if (TokenOptionalAccess != NULL)
+		TokenAccess = TokenOptionalAccess;
 
 	if (ProcessId == NULL)
 		CurrentId = GetCurrentProcessId();
@@ -47,7 +54,7 @@ NAVSTATUS NavOpenProcessToken(
 		return NAV_TOKEN_STATUS_OPEN_PROCESS_FAILED;
 	}
 
-	if (OpenProcessToken(ProcessHandle, TOKEN_QUERY | TOKEN_QUERY_SOURCE | TOKEN_READ, TokenHandle) == FALSE) {
+	if (OpenProcessToken(ProcessHandle, TokenAccess, TokenHandle) == FALSE) {
 		return NAV_TOKEN_STATUS_FAILED;
 	}
 
