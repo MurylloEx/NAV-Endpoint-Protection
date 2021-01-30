@@ -11,7 +11,8 @@ NAVSTATUS NavEnableTokenPrivileges(
 
 NAVSTATUS NavOpenProcessToken(
 	IN DWORD ProcessId,
-	OUT PHANDLE TokenHandle);
+	OUT PHANDLE TokenHandle,
+	IN DWORD TokenOptionalAccess);
 
 NAVSTATUS NavCloseProcessToken(
 	IN HANDLE TokenHandle);

@@ -16,21 +16,18 @@ int main()
 	HANDLE TokenHandle = NULL;
 	BOOL Result = FALSE;
 
-	if (NAV_SUCCESS(NavOpenProcessToken(ProcessId, &TokenHandle))) {
-		printf("Token aberto");
+	if (NAV_SUCCESS(NavOpenProcessToken(ProcessId, &TokenHandle, NULL))) {
+		printf("Opened token\n");
 	}
 
-	NAVSTATUS status1 = NavEnableTokenPrivileges(TokenHandle, (LPWSTR)SE_DEBUG_NAME, TRUE);
+	if (NAV_SUCCESS(NavEnableTokenPrivileges(TokenHandle, (LPWSTR)SE_DEBUG_NAME, TRUE))) {
+		printf("Successfully enabled SE_DEBUG_NAME privilege\n");
+	}
 
-	ULONG valor = GetLastError();
+	if (NAV_SUCCESS(NavCheckPrivilegeToken(TokenHandle, (LPWSTR)SE_DEBUG_NAME, &Result))) {
+		printf("Successfully checked SE_DEBUG_NAME privilege\n");
+	}
 
-
-	NAVSTATUS status = NavCheckPrivilegeToken(TokenHandle, (LPWSTR)SE_DEBUG_NAME, &Result);
-
-	
-
-
-	getchar();
 	return ERROR_SUCCESS;
 }
 
