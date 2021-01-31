@@ -7,26 +7,27 @@
 
 #include <iostream>
 #include "nav/status.h"
-#include "nav/privileges.h"
+#include "nav/protection.h"
 
 
 int main()
 {
-	DWORD ProcessId = GetCurrentProcessId();
-	HANDLE TokenHandle = NULL;
-	BOOL Result = FALSE;
+	DWORD SidSize = 0;
+	PSID Everyone = NULL;
 
-	if (NAV_SUCCESS(NavOpenProcessToken(ProcessId, &TokenHandle, NULL))) {
-		printf("Opened token\n");
-	}
+	NavCreateWellKnownSid(WELL_KNOWN_SID_TYPE::WinWorldSid, NULL, &Everyone, &SidSize);
 
-	if (NAV_SUCCESS(NavEnableTokenPrivileges(TokenHandle, (LPWSTR)SE_DEBUG_NAME, TRUE))) {
-		printf("Successfully enabled SE_DEBUG_NAME privilege\n");
-	}
+	NAVSTATUS status = NavSetProcessKernelAce(
+		GetCurrentProcess(), 
+		ACCESS_MODE::DENY_ACCESS, 
+		PROCESS_VM_WRITE | PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION,
+		TRUSTEE_FORM::TRUSTEE_IS_SID, 
+		TRUSTEE_TYPE::TRUSTEE_IS_WELL_KNOWN_GROUP,
+		(LPVOID)Everyone);
 
-	if (NAV_SUCCESS(NavCheckPrivilegeToken(TokenHandle, (LPWSTR)SE_DEBUG_NAME, &Result))) {
-		printf("Successfully checked SE_DEBUG_NAME privilege\n");
-	}
+	NavFreeWellKnownSid(&Everyone);
+
+	DWORD error = GetLastError();
 
 	getchar();
 	return ERROR_SUCCESS;
