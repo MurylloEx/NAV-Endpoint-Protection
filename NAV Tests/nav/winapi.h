@@ -35,7 +35,7 @@
 #define ObjectNameInformation 1
 #define ObjectTypeInformation 2
 
-#define NT_CRITICAL_PROCESS 0x1d
+#define NT_CRITICAL_PROCESS 0x1DUL
 
 /* NT internal structures */
 typedef struct _UNICODE_STRING {
