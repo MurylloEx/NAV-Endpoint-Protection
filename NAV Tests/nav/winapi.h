@@ -16,7 +16,9 @@
 #define NtSetInformationProcessName		(LPSTR)"NtSetInformationProcess"
 
 /* NTSTATUS Macros */
+#ifndef NT_SUCCESS
 #define NT_SUCCESS(x) ((x) >= 0)
+#endif
 
 /* NTSTATUS Error Codes */
 #define STATUS_INFO_LENGTH_MISMATCH 0xc0000004
