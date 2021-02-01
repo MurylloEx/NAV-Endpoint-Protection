@@ -17,17 +17,16 @@ int main()
 
 	NavCreateWellKnownSid(WELL_KNOWN_SID_TYPE::WinWorldSid, NULL, &Everyone, &SidSize);
 
-	NAVSTATUS status = NavSetProcessKernelAce(
-		GetCurrentProcess(), 
-		ACCESS_MODE::DENY_ACCESS, 
-		PROCESS_VM_WRITE | PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION,
-		TRUSTEE_FORM::TRUSTEE_IS_SID, 
+	LPCWSTR FileName = L"C:\\Users\\Murilo\\Desktop\\teste.exe";
+	
+	NAVSTATUS Status = NavKeSetFileAce(FileName,
+		ACCESS_MODE::DENY_ACCESS,
+		GENERIC_READ,
+		TRUSTEE_FORM::TRUSTEE_IS_SID,
 		TRUSTEE_TYPE::TRUSTEE_IS_WELL_KNOWN_GROUP,
 		(LPVOID)Everyone);
 
 	NavFreeWellKnownSid(&Everyone);
-
-	DWORD error = GetLastError();
 
 	getchar();
 	return ERROR_SUCCESS;

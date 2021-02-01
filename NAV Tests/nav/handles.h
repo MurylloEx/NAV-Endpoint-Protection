@@ -1,6 +1,5 @@
 #pragma once
 
-//#include <vld.h>
 #include "winapi.h"
 #include "memory.h"
 
