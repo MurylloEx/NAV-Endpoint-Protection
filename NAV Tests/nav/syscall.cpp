@@ -5,9 +5,16 @@ typedef struct _NAV_NAMED_PIPE_DATA_SHADOW {
 	PNAV_NAMED_PIPE_DATA PipeData;
 } NAV_NAMED_PIPE_DATA_SHADOW, *PNAV_NAMED_PIPE_DATA_SHADOW;
 
+typedef struct _NAV_NAMED_PIPE_SEMAPHORE {
+	HANDLE EventHandle;
+	DWORD Semaphore;
+	HANDLE ThreadHandle;
+} NAV_NAMED_PIPE_SEMAPHORE, *PNAV_NAMED_PIPE_SEMAPHORE;
+
 DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
 {
 	PNAV_NAMED_PIPE_DATA_SHADOW PipeBufferData = (PNAV_NAMED_PIPE_DATA_SHADOW)ThreadParam;
+	PNAV_NAMED_PIPE_SEMAPHORE PipeSemaphore = (PNAV_NAMED_PIPE_SEMAPHORE)PipeBufferData->PipeData->Reserved;
 
 	DWORD IncomingBufferSize = PipeBufferData->PipeData->BufferSize;
 	DWORD OutgoingBufferSize = PipeBufferData->PipeData->BufferSize;
@@ -22,6 +29,8 @@ DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
 	NAV_SYSCALL_INTERRUPT_RESPONSE Outgoing = { 0 };
 
 	BOOL IsSuccess = FALSE;
+
+	PipeSemaphore->Semaphore++;
 
 	while (true) {
 		IsSuccess = ReadFile(PipeBufferData->PipeHandle, IncomingAddress,
@@ -63,6 +72,11 @@ DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
 	DisconnectNamedPipe(PipeBufferData->PipeHandle);
 	CloseHandle(PipeBufferData->PipeHandle);
 
+	PipeSemaphore->Semaphore--;
+
+	if (PipeSemaphore->Semaphore == 0)
+		SetEvent(PipeSemaphore->EventHandle);
+
 	return EXIT_SUCCESS;
 }
 
@@ -100,6 +114,7 @@ DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) {
 				NavFreeMem(PipeParamsData);
 				break;
 			}
+			ResetEvent(((PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved)->EventHandle);
 			CloseHandle(ThreadHandle);
 		}
 		else {
@@ -116,8 +131,24 @@ NAVSTATUS NAVAPI NavCreateNamedPipe(
 	HANDLE ThreadHandle = CreateThread(PipeData->ThreadSecurity, NULL,
 		(LPTHREAD_START_ROUTINE)NavPipeThreadRoutine, (LPVOID)PipeData, NULL, ThreadId);
 	if (ThreadHandle != NULL) {
-		CloseHandle(ThreadHandle);
-		return NAV_NAMED_PIPE_STATUS_SUCCESS;
+		PNAV_NAMED_PIPE_SEMAPHORE Semaphore = (PNAV_NAMED_PIPE_SEMAPHORE)NavAllocMem(sizeof(NAV_NAMED_PIPE_SEMAPHORE));
+		Semaphore->EventHandle = CreateEventW(NULL, FALSE, TRUE, NULL);
+		Semaphore->ThreadHandle = ThreadHandle;
+		return NAV_CREATE_PIPE_STATUS_SUCCESS;
 	}
-	return NAV_NAMED_PIPE_STATUS_FAILED;
+	return NAV_CREATE_PIPE_STATUS_FAILED;
+}
+
+NAVSTATUS NAVAPI NavDeleteNamedPipe(
+	IN PNAV_NAMED_PIPE_DATA PipeData)
+{
+	PNAV_NAMED_PIPE_SEMAPHORE PipeSemaphore = (PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved;
+	if (WaitForSingleObject(PipeSemaphore->EventHandle, INFINITE) == WAIT_OBJECT_0) {
+		if (TerminateThread(PipeSemaphore->ThreadHandle, EXIT_SUCCESS) != FALSE) {
+			NavFreeMem(PipeSemaphore);
+			NavFreeMem(PipeData);
+			return NAV_CLOSE_PIPE_STATUS_SUCCESS;
+		}
+	}
+	return NAV_CLOSE_PIPE_STATUS_FAILED;
 }

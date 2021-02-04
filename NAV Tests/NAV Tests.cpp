@@ -5,7 +5,7 @@
 #define UNICODE
 #endif
 
-#include <vld.h>
+//#include <vld.h>
 #include <stdio.h>
 #include "nav/syscall.h"
 
