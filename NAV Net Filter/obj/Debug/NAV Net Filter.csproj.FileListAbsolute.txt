@@ -115,8 +115,6 @@ C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV Technology\NAV Technol
 C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\NavNetFilter.dll.config
 C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\NavNetFilter.dll
 C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\NavNetFilter.pdb
-C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\NavNetFilter.dll.CodeAnalysisLog.xml
-C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\NavNetFilter.dll.lastcodeanalysissucceeded
 C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\System.Runtime.InteropServices.RuntimeInformation.dll
 C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\Microsoft.Win32.Primitives.dll
 C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\NAV Net Filter\bin\Debug\netstandard.dll

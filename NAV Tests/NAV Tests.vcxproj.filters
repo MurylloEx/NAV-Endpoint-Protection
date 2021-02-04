@@ -36,6 +36,12 @@
     <ClCompile Include="nav\protection.cpp">
       <Filter>Header Files\nav</Filter>
     </ClCompile>
+    <ClCompile Include="nav\service.cpp">
+      <Filter>Header Files\nav</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\syscall.cpp">
+      <Filter>Header Files\nav</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nav\handles.h">
@@ -54,6 +60,12 @@
       <Filter>Header Files\nav</Filter>
     </ClInclude>
     <ClInclude Include="nav\protection.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\service.h">
+      <Filter>Header Files\nav</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\syscall.h">
       <Filter>Header Files\nav</Filter>
     </ClInclude>
   </ItemGroup>
