@@ -1,4 +1,5 @@
 #include "memory.h"
+#include <stdio.h>
 
 LPVOID NavAllocMem(IN SIZE_T SizeOfBlock) {
 	return HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, SizeOfBlock);

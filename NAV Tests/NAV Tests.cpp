@@ -5,30 +5,41 @@
 #define UNICODE
 #endif
 
-#include <iostream>
-#include "nav/status.h"
-#include "nav/protection.h"
+#include <vld.h>
+#include <stdio.h>
+#include "nav/syscall.h"
 
-
-int main()
+VOID NAVAPI NavSyscallRoutine(
+	IN PNAV_SYSCALL_INTERRUPT_REQUEST Incoming, 
+	OUT PNAV_SYSCALL_INTERRUPT_RESPONSE Outgoing) 
 {
-	DWORD SidSize = 0;
-	PSID Everyone = NULL;
-
-	NavCreateWellKnownSid(WELL_KNOWN_SID_TYPE::WinWorldSid, NULL, &Everyone, &SidSize);
-
-	LPCWSTR FileName = L"C:\\Users\\Murilo\\Desktop\\teste.exe";
-	
-	NAVSTATUS Status = NavKeSetFileAce(FileName,
-		ACCESS_MODE::DENY_ACCESS,
-		GENERIC_READ,
-		TRUSTEE_FORM::TRUSTEE_IS_SID,
-		TRUSTEE_TYPE::TRUSTEE_IS_WELL_KNOWN_GROUP,
-		(LPVOID)Everyone);
-
-	NavFreeWellKnownSid(&Everyone);
-
-	getchar();
-	return ERROR_SUCCESS;
+	wprintf(L"wtf\n");
 }
 
+
+VOID Tests() {
+
+	PNAV_NAMED_PIPE_DATA data = (PNAV_NAMED_PIPE_DATA)NavAllocMem(sizeof(NAV_NAMED_PIPE_DATA));
+	DWORD threadId = 0;
+
+	data->BufferSize = NAV_PIPE_BUFFER_SIZE;
+	data->MaxInstances = PIPE_UNLIMITED_INSTANCES;
+	data->ThreadSecurity = NULL;
+	data->PipeSecurity = NULL;
+	data->PipeName = L"\\\\.\\pipe\\NAV_NAMED_PIPE";
+
+	data->SyscallRoutine = NavSyscallRoutine;
+
+	NAVSTATUS status = NavCreateNamedPipe(data, &threadId);
+	getchar();
+
+	NavFreeMem(data);
+}
+
+
+int main(VOID)
+{
+	Tests();
+	
+	return 0;
+}

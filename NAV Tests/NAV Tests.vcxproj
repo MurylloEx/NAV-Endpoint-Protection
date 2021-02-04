@@ -156,6 +156,8 @@
     <ClCompile Include="nav\memory.cpp" />
     <ClCompile Include="nav\privileges.cpp" />
     <ClCompile Include="nav\protection.cpp" />
+    <ClCompile Include="nav\service.cpp" />
+    <ClCompile Include="nav\syscall.cpp" />
     <ClCompile Include="nav\winapi.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -163,7 +165,9 @@
     <ClInclude Include="nav\memory.h" />
     <ClInclude Include="nav\privileges.h" />
     <ClInclude Include="nav\protection.h" />
+    <ClInclude Include="nav\service.h" />
     <ClInclude Include="nav\status.h" />
+    <ClInclude Include="nav\syscall.h" />
     <ClInclude Include="nav\winapi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
