@@ -8,6 +8,11 @@
 #define NAV_SYSCALL_BUFFER_SIZE(Size) ((DWORD)Size - (sizeof(DWORD) + sizeof(ULONG_PTR)))
 #define NAV_SYSCALL_TOTAL_SIZE(Size) ((DWORD)Size + (sizeof(DWORD) + sizeof(ULONG_PTR)))
 
+#define NAV_SYSCALL_NUMBER_PTR(P) ((LPVOID)P)
+#define NAV_SYSCALL_LENGTH_PTR(P) ((LPVOID)((ULONG_PTR)P + sizeof(ULONG_PTR)))
+#define NAV_SYSCALL_BUFFER_PTR(P) ((LPVOID)((ULONG_PTR)P + sizeof(ULONG_PTR) + sizeof(DWORD)))
+#define NAV_SYSCALL_BASE_PTR(P)((LPVOID)((ULONG_PTR)P - (sizeof(ULONG_PTR) + sizeof(DWORD))))
+
 typedef struct _NAV_SYSCALL_INTERRUPT_RESPONSE {
 	ULONG_PTR SyscallNumber;
 	DWORD BufferSize;
@@ -37,3 +42,15 @@ typedef struct _NAV_NAMED_PIPE_DATA {
 NAVSTATUS NAVAPI NavCreateNamedPipe(
 	IN PNAV_NAMED_PIPE_DATA PipeData,
 	OUT PDWORD ThreadId);
+
+NAVSTATUS NAVAPI NavDeleteNamedPipe(
+	IN PNAV_NAMED_PIPE_DATA PipeData);
+
+NAVSTATUS NAVAPI NavSyscallExecute(
+	IN LPCWSTR PipeName,
+	IN LPSECURITY_ATTRIBUTES PipeSecurity,
+	IN BYTE* Buffer,
+	IN DWORD Size,
+	IN DWORD SyscallBufferSize,
+	IN ULONG_PTR SyscallNumber,
+	OUT PNAV_SYSCALL_INTERRUPT_RESPONSE Response);

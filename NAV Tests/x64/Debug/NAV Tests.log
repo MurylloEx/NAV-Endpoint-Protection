@@ -1,10 +1,2 @@
 ﻿  NAV Tests.cpp
-  handles.cpp
-  memory.cpp
-  privileges.cpp
-  protection.cpp
-  service.cpp
-  syscall.cpp
-  winapi.cpp
-  Generating Code...
   NAV Tests.vcxproj -> C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\x64\Debug\NAV Tests.exe

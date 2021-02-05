@@ -1,6 +1,6 @@
 #include "privileges.h"
 
-NAVSTATUS NavEnableTokenPrivileges(
+NAVSTATUS NAVAPI NavEnableTokenPrivileges(
 	IN HANDLE TokenHandle,
 	IN LPWSTR PrivilegeName,
 	IN BOOL EnablePrivilege)
@@ -32,7 +32,7 @@ NAVSTATUS NavEnableTokenPrivileges(
 	return NAV_PRIVILEGE_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavOpenProcessToken(
+NAVSTATUS NAVAPI NavOpenProcessToken(
 	IN DWORD ProcessId,
 	OUT PHANDLE TokenHandle,
 	IN DWORD TokenOptionalAccess)
@@ -61,7 +61,7 @@ NAVSTATUS NavOpenProcessToken(
 	return NAV_TOKEN_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavCloseProcessToken(
+NAVSTATUS NAVAPI NavCloseProcessToken(
 	IN HANDLE TokenHandle) 
 {
 	if (CloseHandle(TokenHandle) == TRUE) {
@@ -70,7 +70,7 @@ NAVSTATUS NavCloseProcessToken(
 	return NAV_CLOSE_TOKEN_STATUS_FAILED;
 }
 
-NAVSTATUS NavCheckPrivilegeToken(
+NAVSTATUS NAVAPI NavCheckPrivilegeToken(
 	IN HANDLE TokenHandle,
 	IN LPWSTR PrivilegeName,
 	OUT PBOOL BooleanResult)

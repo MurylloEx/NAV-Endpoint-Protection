@@ -21,23 +21,23 @@ typedef struct _NAV_SECURITY_DESCRIPTOR {
 	DWORD PrimaryGroupSIDSize;
 } NAV_SECURITY_DESCRIPTOR, *LPNAV_SECURITY_DESCRIPTOR;
 
-NAVSTATUS NavCreateWellKnownSid(
+NAVSTATUS NAVAPI NavCreateWellKnownSid(
 	IN WELL_KNOWN_SID_TYPE SidType,
 	IN PSID DomainSid,
 	IN PSID* SidPtr,
 	OUT DWORD* SidSizePtr);
 
-NAVSTATUS NavFreeWellKnownSid(
+NAVSTATUS NAVAPI NavFreeWellKnownSid(
 	IN PSID* SidPtr);
 
-NAVSTATUS NavKeMakeAbDescriptor(
+NAVSTATUS NAVAPI NavKeMakeAbDescriptor(
 	IN PSECURITY_DESCRIPTOR* RelativeSecurityDescriptor,
 	OUT LPNAV_SECURITY_DESCRIPTOR* NavSecurityDescriptor);
 
-NAVSTATUS NavKeFreeAbDescriptor(
+NAVSTATUS NAVAPI NavKeFreeAbDescriptor(
 	IN LPNAV_SECURITY_DESCRIPTOR* NavSecurityDescriptor);
 
-NAVSTATUS NavKeSetProcessAce(
+NAVSTATUS NAVAPI NavKeSetProcessAce(
 	IN HANDLE ProcessHandle,
 	IN ACCESS_MODE AccessMode,
 	IN ACCESS_PERMISSIONS AccessPermissions,
@@ -45,11 +45,11 @@ NAVSTATUS NavKeSetProcessAce(
 	IN TRUSTEE_TYPE TrusteeType,
 	IN LPVOID TrusteeName);
 
-NAVSTATUS NavKeProtectProcess(
+NAVSTATUS NAVAPI NavKeProtectProcess(
 	IN HANDLE ProcessHandle,
 	IN BOOL ProtectionState);
 
-NAVSTATUS NavKeSetFileAce(
+NAVSTATUS NAVAPI NavKeSetFileAce(
 	IN LPCWSTR FileName,
 	IN ACCESS_MODE AccessMode,
 	IN ACCESS_PERMISSIONS AccessPermissions,
@@ -57,7 +57,7 @@ NAVSTATUS NavKeSetFileAce(
 	IN TRUSTEE_TYPE TrusteeType,
 	IN LPVOID TrusteeName);
 
-NAVSTATUS NavKeSetKeyAce(
+NAVSTATUS NAVAPI NavKeSetKeyAce(
 	IN HKEY KeyHandle,
 	IN ACCESS_MODE AccessMode,
 	IN ACCESS_PERMISSIONS AccessPermissions,

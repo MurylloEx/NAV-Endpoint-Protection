@@ -4,7 +4,7 @@
 
 #pragma comment(lib, "Wtsapi32.lib")
 
-NAVSTATUS NavCreateProcessAsImpersonatedUser(
+NAVSTATUS NAVAPI NavCreateProcessAsImpersonatedUser(
 	IN LPCWSTR ExecutablePath,
 	IN LPCWSTR ExecutableDirectory,
 	IN LPSECURITY_ATTRIBUTES ProcessSecurity,

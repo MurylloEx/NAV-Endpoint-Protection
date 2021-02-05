@@ -1,7 +1,7 @@
 #include "protection.h"
 #include "privileges.h"
 
-NAVSTATUS NavCreateWellKnownSid(
+NAVSTATUS NAVAPI NavCreateWellKnownSid(
 	IN WELL_KNOWN_SID_TYPE SidType,
 	IN PSID DomainSid,
 	IN PSID* SidPtr,
@@ -21,7 +21,7 @@ NAVSTATUS NavCreateWellKnownSid(
 	if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
 		if (CreateWellKnownSid(SidType, DomainSid, PSid, &SidSize) == FALSE) {
 			NavFreeMem(PSid);
-			return NAV_CREATE_SID_STATUS_SID_CREATION_FAILED;
+			return NAV_CREATE_SID_STATUS_CREATION_FAILED;
 		}
 	}
 	*SidPtr = PSid;
@@ -29,7 +29,7 @@ NAVSTATUS NavCreateWellKnownSid(
 	return NAV_CREATE_SID_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavFreeWellKnownSid(
+NAVSTATUS NAVAPI NavFreeWellKnownSid(
 	IN PSID* SidPtr)
 {
 	if (NavFreeMem((LPVOID)(*SidPtr)) == FALSE) {
@@ -38,7 +38,7 @@ NAVSTATUS NavFreeWellKnownSid(
 	return NAV_FREE_SID_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavKeMakeAbDescriptor(
+NAVSTATUS NAVAPI NavKeMakeAbDescriptor(
 	IN PSECURITY_DESCRIPTOR* RelativeSecurityDescriptor,
 	OUT LPNAV_SECURITY_DESCRIPTOR* NavSecurityDescriptor)
 {
@@ -112,7 +112,7 @@ NAVSTATUS NavKeMakeAbDescriptor(
 			NavFreeMem(Sacl);
 			NavFreeMem(OwnerSID);
 			NavFreeMem(PrimaryGroupSID);
-			return NAV_SET_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
+			return NAV_MAKE_SD_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 		}
 	}
 
@@ -125,7 +125,7 @@ NAVSTATUS NavKeMakeAbDescriptor(
 	return NAV_MAKE_SD_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavKeFreeAbDescriptor(
+NAVSTATUS NAVAPI NavKeFreeAbDescriptor(
 	IN LPNAV_SECURITY_DESCRIPTOR* NavSecurityDescriptor)
 {
 	LPNAV_SECURITY_DESCRIPTOR RefNavSecurityDescriptor = *NavSecurityDescriptor;
@@ -141,7 +141,7 @@ NAVSTATUS NavKeFreeAbDescriptor(
 	return NAV_FREE_SD_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavKeSetProcessAce(
+NAVSTATUS NAVAPI NavKeSetProcessAce(
 	IN HANDLE ProcessHandle,
 	IN ACCESS_MODE AccessMode,
 	IN ACCESS_PERMISSIONS AccessPermissions,
@@ -154,18 +154,18 @@ NAVSTATUS NavKeSetProcessAce(
 	GetKernelObjectSecurity(ProcessHandle, DACL_SECURITY_INFORMATION, NULL, BufferSize, &BufferSize);
 	
 	if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-		return NAV_SET_ACE_STATUS_UNKNOWN_BUFFER_SIZE;
+		return NAV_PROCESS_ACE_STATUS_UNKNOWN_BUFFER_SIZE;
 	}
 
 	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocMem(BufferSize);
 
 	if (RelSecurityDescriptor == FALSE) {
-		return NAV_SET_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
+		return NAV_PROCESS_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
 	}
 
 	if (GetKernelObjectSecurity(ProcessHandle, DACL_SECURITY_INFORMATION, RelSecurityDescriptor, BufferSize, &BufferSize) == FALSE) {
 		NavFreeMem(RelSecurityDescriptor);
-		return NAV_SET_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
+		return NAV_PROCESS_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 	}
 
 	LPNAV_SECURITY_DESCRIPTOR NavSecurityDescriptor = NULL;
@@ -174,9 +174,9 @@ NAVSTATUS NavKeSetProcessAce(
 
 	if (!NAV_SUCCESS(AbDescriptorStatus)) {
 		if (AbDescriptorStatus == NAV_MAKE_SD_STATUS_MEMORY_ALLOCATION_FAILED)
-			return NAV_SET_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
+			return NAV_PROCESS_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
 		if (AbDescriptorStatus == NAV_MAKE_SD_STATUS_UNKNOWN_SECURITY_DESCRIPTOR)
-			return NAV_SET_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
+			return NAV_PROCESS_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 	}
 
 	PACL NewAcl = NULL;
@@ -196,29 +196,29 @@ NAVSTATUS NavKeSetProcessAce(
 
 	if (GetSecurityDescriptorDacl(RelSecurityDescriptor, &IsDaclPresent, &OldAcl, &IsDaclDefault) == FALSE) {
 		NavFreeMem(RelSecurityDescriptor);
-		return NAV_SET_ACE_STATUS_RETRIEVE_DACL_FAILED;
+		return NAV_PROCESS_ACE_STATUS_RETRIEVE_DACL_FAILED;
 	}
 
 	if (SetEntriesInAclW(1, &ExplicitAccess, OldAcl, &NewAcl) != ERROR_SUCCESS) {
 		NavFreeMem(RelSecurityDescriptor);
-		return NAV_SET_ACE_STATUS_DACL_CHANGE_FAILED;
+		return NAV_PROCESS_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetSecurityDescriptorDacl(NavSecurityDescriptor->AbSecurityDescriptor, TRUE, NewAcl, TRUE) == FALSE) {
 		NavFreeMem(RelSecurityDescriptor);
-		return NAV_SET_ACE_STATUS_DACL_CHANGE_FAILED;
+		return NAV_PROCESS_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetKernelObjectSecurity(ProcessHandle, DACL_SECURITY_INFORMATION, NavSecurityDescriptor->AbSecurityDescriptor) == FALSE) {
 		NavFreeMem(RelSecurityDescriptor);
-		return NAV_SET_ACE_STATUS_DESCRIPTOR_CHANGE_FAILED;
+		return NAV_PROCESS_ACE_STATUS_DESCRIPTOR_CHANGE_FAILED;
 	}
 
 	NavFreeMem(RelSecurityDescriptor);
-	return NAV_SET_ACE_STATUS_SUCCESS;
+	return NAV_PROCESS_ACE_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavKeProtectProcess(
+NAVSTATUS NAVAPI NavKeProtectProcess(
 	IN HANDLE ProcessHandle,
 	IN BOOL ProtectionState)
 {
@@ -242,7 +242,7 @@ NAVSTATUS NavKeProtectProcess(
 	return NAV_KERNEL_PROTECTION_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavKeSetFileAce(
+NAVSTATUS NAVAPI NavKeSetFileAce(
 	IN LPCWSTR FileName,
 	IN ACCESS_MODE AccessMode,
 	IN ACCESS_PERMISSIONS AccessPermissions,
@@ -324,7 +324,7 @@ NAVSTATUS NavKeSetFileAce(
 	return NAV_FILE_ACE_STATUS_SUCCESS;
 }
 
-NAVSTATUS NavKeSetKeyAce(
+NAVSTATUS NAVAPI NavKeSetKeyAce(
 	IN HKEY KeyHandle,
 	IN ACCESS_MODE AccessMode,
 	IN ACCESS_PERMISSIONS AccessPermissions,
@@ -335,18 +335,18 @@ NAVSTATUS NavKeSetKeyAce(
 	DWORD BufferSize = 0;
 
 	if (RegGetKeySecurity(KeyHandle, DACL_SECURITY_INFORMATION, NULL, &BufferSize) != ERROR_INSUFFICIENT_BUFFER) {
-		return NAV_FILE_ACE_STATUS_UNKNOWN_BUFFER_SIZE;
+		return NAV_KEY_ACE_STATUS_UNKNOWN_BUFFER_SIZE;
 	}
 
 	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocMem(BufferSize);
 
 	if (RelSecurityDescriptor == FALSE) {
-		return NAV_FILE_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
+		return NAV_KEY_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
 	}
 
 	if (RegGetKeySecurity(KeyHandle, DACL_SECURITY_INFORMATION, RelSecurityDescriptor, &BufferSize) != ERROR_SUCCESS) {
 		NavFreeMem(RelSecurityDescriptor);
-		return NAV_FILE_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
+		return NAV_KEY_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 	}
 
 	LPNAV_SECURITY_DESCRIPTOR NavSecurityDescriptor = NULL;
@@ -355,9 +355,9 @@ NAVSTATUS NavKeSetKeyAce(
 
 	if (!NAV_SUCCESS(AbDescriptorStatus)) {
 		if (AbDescriptorStatus == NAV_MAKE_SD_STATUS_MEMORY_ALLOCATION_FAILED)
-			return NAV_FILE_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
+			return NAV_KEY_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
 		if (AbDescriptorStatus == NAV_MAKE_SD_STATUS_UNKNOWN_SECURITY_DESCRIPTOR)
-			return NAV_FILE_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
+			return NAV_KEY_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 	}
 
 	PACL NewAcl = NULL;
@@ -378,28 +378,28 @@ NAVSTATUS NavKeSetKeyAce(
 	if (GetSecurityDescriptorDacl(RelSecurityDescriptor, &IsDaclPresent, &OldAcl, &IsDaclDefault) == FALSE) {
 		NavFreeMem(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
-		return NAV_FILE_ACE_STATUS_RETRIEVE_DACL_FAILED;
+		return NAV_KEY_ACE_STATUS_RETRIEVE_DACL_FAILED;
 	}
 
 	if (SetEntriesInAclW(1, &ExplicitAccess, OldAcl, &NewAcl) != ERROR_SUCCESS) {
 		NavFreeMem(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
-		return NAV_FILE_ACE_STATUS_DACL_CHANGE_FAILED;
+		return NAV_KEY_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetSecurityDescriptorDacl(NavSecurityDescriptor->AbSecurityDescriptor, TRUE, NewAcl, TRUE) == FALSE) {
 		NavFreeMem(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
-		return NAV_FILE_ACE_STATUS_DACL_CHANGE_FAILED;
+		return NAV_KEY_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (RegSetKeySecurity(KeyHandle, DACL_SECURITY_INFORMATION, NavSecurityDescriptor->AbSecurityDescriptor) == FALSE) {
 		NavFreeMem(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
-		return NAV_FILE_ACE_STATUS_DESCRIPTOR_CHANGE_FAILED;
+		return NAV_KEY_ACE_STATUS_DESCRIPTOR_CHANGE_FAILED;
 	}
 
 	NavFreeMem(RelSecurityDescriptor);
 	NavKeFreeAbDescriptor(&NavSecurityDescriptor);
-	return NAV_FILE_ACE_STATUS_SUCCESS;
+	return NAV_KEY_ACE_STATUS_SUCCESS;
 }

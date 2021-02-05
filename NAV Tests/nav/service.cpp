@@ -1,6 +1,6 @@
 #include "service.h"
 
-NAVSTATUS NavCreateProcessAsImpersonatedUser(
+NAVSTATUS NAVAPI NavCreateProcessAsImpersonatedUser(
 	IN LPCWSTR ExecutablePath,
 	IN LPCWSTR ExecutableDirectory,
 	IN LPSECURITY_ATTRIBUTES ProcessSecurity,
