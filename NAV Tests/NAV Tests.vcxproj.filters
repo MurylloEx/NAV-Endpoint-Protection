@@ -16,57 +16,60 @@
     <Filter Include="Header Files\nav">
       <UniqueIdentifier>{e23aa0dd-e103-4e87-9bfa-48e1ccf42709}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\nav\base">
+      <UniqueIdentifier>{85611597-c65b-44de-85d9-66b372c4bddc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NAV Tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nav\memory.cpp">
-      <Filter>Header Files\nav</Filter>
+    <ClCompile Include="nav\base\handles.cpp">
+      <Filter>Header Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\winapi.cpp">
-      <Filter>Header Files\nav</Filter>
+    <ClCompile Include="nav\base\memory.cpp">
+      <Filter>Header Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\handles.cpp">
-      <Filter>Header Files\nav</Filter>
+    <ClCompile Include="nav\base\privileges.cpp">
+      <Filter>Header Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\privileges.cpp">
-      <Filter>Header Files\nav</Filter>
+    <ClCompile Include="nav\base\protection.cpp">
+      <Filter>Header Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\protection.cpp">
-      <Filter>Header Files\nav</Filter>
+    <ClCompile Include="nav\base\service.cpp">
+      <Filter>Header Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\service.cpp">
-      <Filter>Header Files\nav</Filter>
+    <ClCompile Include="nav\base\syscall.cpp">
+      <Filter>Header Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\syscall.cpp">
-      <Filter>Header Files\nav</Filter>
+    <ClCompile Include="nav\base\winapi.cpp">
+      <Filter>Header Files\nav\base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="nav\handles.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\handles.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\memory.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\memory.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\winapi.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\privileges.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\privileges.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\protection.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\status.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\service.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\protection.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\status.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\service.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\syscall.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\syscall.h">
-      <Filter>Header Files\nav</Filter>
+    <ClInclude Include="nav\base\winapi.h">
+      <Filter>Header Files\nav\base</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
