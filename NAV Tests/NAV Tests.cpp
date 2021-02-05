@@ -7,7 +7,7 @@
 
 #include <vld.h>
 #include <stdio.h>
-#include "nav/syscall.h"
+#include "nav/base/syscall.h"
 
 VOID NAVAPI NavSyscallRoutine(
 	IN PNAV_SYSCALL_INTERRUPT_REQUEST Incoming, 

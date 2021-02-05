@@ -1,8 +1,9 @@
+#pragma once
+#pragma comment(lib, "Wtsapi32.lib")
+
 #include <Windows.h>
 #include <WtsApi32.h>
 #include "status.h"
-
-#pragma comment(lib, "Wtsapi32.lib")
 
 NAVSTATUS NAVAPI NavCreateProcessAsImpersonatedUser(
 	IN LPCWSTR ExecutablePath,

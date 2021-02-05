@@ -152,23 +152,23 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="NAV Tests.cpp" />
-    <ClCompile Include="nav\handles.cpp" />
-    <ClCompile Include="nav\memory.cpp" />
-    <ClCompile Include="nav\privileges.cpp" />
-    <ClCompile Include="nav\protection.cpp" />
-    <ClCompile Include="nav\service.cpp" />
-    <ClCompile Include="nav\syscall.cpp" />
-    <ClCompile Include="nav\winapi.cpp" />
+    <ClCompile Include="nav\base\handles.cpp" />
+    <ClCompile Include="nav\base\memory.cpp" />
+    <ClCompile Include="nav\base\privileges.cpp" />
+    <ClCompile Include="nav\base\protection.cpp" />
+    <ClCompile Include="nav\base\service.cpp" />
+    <ClCompile Include="nav\base\syscall.cpp" />
+    <ClCompile Include="nav\base\winapi.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="nav\handles.h" />
-    <ClInclude Include="nav\memory.h" />
-    <ClInclude Include="nav\privileges.h" />
-    <ClInclude Include="nav\protection.h" />
-    <ClInclude Include="nav\service.h" />
-    <ClInclude Include="nav\status.h" />
-    <ClInclude Include="nav\syscall.h" />
-    <ClInclude Include="nav\winapi.h" />
+    <ClInclude Include="nav\base\handles.h" />
+    <ClInclude Include="nav\base\memory.h" />
+    <ClInclude Include="nav\base\privileges.h" />
+    <ClInclude Include="nav\base\protection.h" />
+    <ClInclude Include="nav\base\service.h" />
+    <ClInclude Include="nav\base\status.h" />
+    <ClInclude Include="nav\base\syscall.h" />
+    <ClInclude Include="nav\base\winapi.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
