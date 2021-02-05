@@ -1,6 +1,6 @@
 #include "handles.h"
 
-LPWSTR NavQueryProcessPathNameByHandle(
+LPWSTR NAVAPI NavQueryProcessPathNameByHandle(
 	IN HANDLE ProcessHandle) 
 {
 	DWORD PathSize = MAX_PATH + 1;
@@ -17,13 +17,13 @@ LPWSTR NavQueryProcessPathNameByHandle(
 	return NULL;
 }
 
-DWORD NavQueryProcessIdByHandle(
+DWORD NAVAPI NavQueryProcessIdByHandle(
 	IN HANDLE ProcessHandle) 
 {
 	return GetProcessId(ProcessHandle);
 }
 
-LPWSTR NavQueryKeyNameByHandle(
+LPWSTR NAVAPI NavQueryKeyNameByHandle(
 	IN HANDLE KeyHandle)
 {
 	ULONG KeyInfoBufferSize = 0;
@@ -48,7 +48,7 @@ LPWSTR NavQueryKeyNameByHandle(
 	return FALSE;
 }
 
-LPWSTR NavQueryFileNameByHandle(
+LPWSTR NAVAPI NavQueryFileNameByHandle(
 	IN HANDLE FileHandle) 
 {
 	DWORD dwPathSize = (DWORD)0x10;
@@ -91,7 +91,7 @@ LPWSTR NavQueryFileNameByHandle(
 	}
 }
 
-BOOL NavGetProcessHandles(
+BOOL NAVAPI NavGetProcessHandles(
 	IN ULONG ProcessId,
 	IN PNAV_PROCESS_HANDLES ProcessHandles) 
 {
@@ -222,7 +222,7 @@ BOOL NavGetProcessHandles(
 	return TRUE;
 }
 
-BOOL NavFreeProcessHandles(
+BOOL NAVAPI NavFreeProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles) {
 	PNAV_PROCESS_HANDLES TempStructHandles = ProcessHandles;
 	PNAV_PROCESS_HANDLES LastStructHandles = ProcessHandles;
@@ -251,7 +251,7 @@ BOOL NavFreeProcessHandles(
 	return Status;
 }
 
-BOOL NavGetFilesByProcessHandles(
+BOOL NAVAPI NavGetFilesByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_FILES ProcessFiles) 
 {
@@ -314,7 +314,7 @@ BOOL NavGetFilesByProcessHandles(
 	return Status;
 }
 
-BOOL NavFreeOpenFiles(
+BOOL NAVAPI NavFreeOpenFiles(
 	IN PNAV_PROCESS_OPEN_FILES ProcessFiles) 
 {
 
@@ -349,7 +349,7 @@ BOOL NavFreeOpenFiles(
 	return Status;
 }
 
-BOOL NavGetKeysByProcessHandles(
+BOOL NAVAPI NavGetKeysByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_KEYS ProcessKeys)
 {
@@ -411,7 +411,7 @@ BOOL NavGetKeysByProcessHandles(
 	return Status;
 }
 
-BOOL NavFreeOpenKeys(
+BOOL NAVAPI NavFreeOpenKeys(
 	IN PNAV_PROCESS_OPEN_KEYS ProcessKeys) 
 {
 
@@ -446,7 +446,7 @@ BOOL NavFreeOpenKeys(
 	return Status;
 }
 
-BOOL NavGetProcessesByProcessHandles(
+BOOL NAVAPI NavGetProcessesByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer)
 {
@@ -510,7 +510,7 @@ BOOL NavGetProcessesByProcessHandles(
 	return Status;
 }
 
-BOOL NavFreeOpenProcesses(
+BOOL NAVAPI NavFreeOpenProcesses(
 	IN PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer) 
 {
 

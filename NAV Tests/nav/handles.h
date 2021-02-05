@@ -2,6 +2,7 @@
 
 #include "winapi.h"
 #include "memory.h"
+#include "status.h"
 
 /* NAV Handles Structures */
 typedef struct _NAV_PROCESS_HANDLES {
@@ -32,42 +33,42 @@ typedef struct _NAV_PROCESS_OPEN_PROCESSES {
 #define QUERY_KEY_PATH_TO_BASE(P) ((LPVOID)((ULONG_PTR)P - (2 * sizeof(WCHAR))))
 
 /* NAV exported functions */
-LPWSTR NavQueryProcessPathNameByHandle(
+LPWSTR NAVAPI NavQueryProcessPathNameByHandle(
 	IN HANDLE ProcessHandle);
 
-DWORD NavQueryProcessIdByHandle(
+DWORD NAVAPI NavQueryProcessIdByHandle(
 	IN HANDLE ProcessHandle);
 
-LPWSTR NavQueryKeyNameByHandle(
+LPWSTR NAVAPI NavQueryKeyNameByHandle(
 	IN HANDLE KeyHandle);
 
-LPWSTR NavQueryFileNameByHandle(
+LPWSTR NAVAPI NavQueryFileNameByHandle(
 	IN HANDLE FileHandle);
 
-BOOL NavGetProcessHandles(
+BOOL NAVAPI NavGetProcessHandles(
 	IN ULONG ProcessId,
 	IN PNAV_PROCESS_HANDLES ProcessHandles);
 
-BOOL NavFreeProcessHandles(
+BOOL NAVAPI NavFreeProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles);
 
-BOOL NavGetFilesByProcessHandles(
+BOOL NAVAPI NavGetFilesByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_FILES ProcessFiles);
 
-BOOL NavFreeOpenFiles(
+BOOL NAVAPI NavFreeOpenFiles(
 	IN PNAV_PROCESS_OPEN_FILES ProcessFiles);
 
-BOOL NavGetKeysByProcessHandles(
+BOOL NAVAPI NavGetKeysByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_KEYS ProcessKeys);
 
-BOOL NavFreeOpenKeys(
+BOOL NAVAPI NavFreeOpenKeys(
 	IN PNAV_PROCESS_OPEN_KEYS ProcessKeys);
 
-BOOL NavGetProcessesByProcessHandles(
+BOOL NAVAPI NavGetProcessesByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer);
 
-BOOL NavFreeOpenProcesses(
+BOOL NAVAPI NavFreeOpenProcesses(
 	IN PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer);

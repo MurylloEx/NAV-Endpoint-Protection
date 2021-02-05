@@ -5,7 +5,7 @@
 #define UNICODE
 #endif
 
-//#include <vld.h>
+#include <vld.h>
 #include <stdio.h>
 #include "nav/syscall.h"
 
@@ -13,8 +13,11 @@ VOID NAVAPI NavSyscallRoutine(
 	IN PNAV_SYSCALL_INTERRUPT_REQUEST Incoming, 
 	OUT PNAV_SYSCALL_INTERRUPT_RESPONSE Outgoing) 
 {
-	wprintf(L"wtf\n");
+	//printf("%p\n", Incoming->BufferData);
+	Outgoing->BufferSize = 65530;
+	FillMemory(Outgoing->BufferData, 65500, 0xcc);
 }
+
 
 
 VOID Tests() {
@@ -30,12 +33,22 @@ VOID Tests() {
 
 	data->SyscallRoutine = NavSyscallRoutine;
 
-	NAVSTATUS status = NavCreateNamedPipe(data, &threadId);
+	NavCreateNamedPipe(data, &threadId);
+
+	BYTE* buffer = (BYTE*)NavAllocMem(20);
+	for (ULONG i = 0; i < 20; i++) {
+		buffer[i] = (BYTE)i;
+	}
+
+	Sleep(200);
+
+	NAV_SYSCALL_INTERRUPT_RESPONSE response = { 0 };
+
+	NavSyscallExecute(L"\\\\.\\pipe\\NAV_NAMED_PIPE", NULL, buffer, 20, NAV_PIPE_BUFFER_SIZE, 76666, &response);
+
 	getchar();
-
-	NavFreeMem(data);
+	NavDeleteNamedPipe(data);
 }
-
 
 int main(VOID)
 {

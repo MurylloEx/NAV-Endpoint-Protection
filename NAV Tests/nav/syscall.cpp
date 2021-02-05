@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include <stdio.h>
 
 typedef struct _NAV_NAMED_PIPE_DATA_SHADOW {
 	HANDLE PipeHandle;
@@ -9,6 +10,7 @@ typedef struct _NAV_NAMED_PIPE_SEMAPHORE {
 	HANDLE EventHandle;
 	DWORD Semaphore;
 	HANDLE ThreadHandle;
+	HANDLE PipeHandle;
 } NAV_NAMED_PIPE_SEMAPHORE, *PNAV_NAMED_PIPE_SEMAPHORE;
 
 DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
@@ -40,9 +42,9 @@ DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
 			break;
 		}
 
-		Incoming.SyscallNumber = *(ULONG_PTR*)IncomingAddress;
-		Incoming.BufferSize = *(DWORD*)((ULONG_PTR)IncomingAddress + sizeof(ULONG_PTR));
-		Incoming.BufferData = (BYTE*)((ULONG_PTR)IncomingAddress + sizeof(ULONG_PTR) + sizeof(DWORD));
+		Incoming.SyscallNumber = *(ULONG_PTR*)NAV_SYSCALL_NUMBER_PTR(IncomingAddress);
+		Incoming.BufferSize = *(DWORD*)NAV_SYSCALL_LENGTH_PTR(IncomingAddress);
+		Incoming.BufferData = (BYTE*)NAV_SYSCALL_BUFFER_PTR(IncomingAddress);
 
 		if (NAV_SYSCALL_TOTAL_SIZE(Incoming.BufferSize) > PipeBufferData->PipeData->BufferSize) {
 			break;
@@ -50,14 +52,28 @@ DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
 
 		Outgoing.BufferData = (BYTE*)OutgoingAddress;
 		PipeBufferData->PipeData->SyscallRoutine(&Incoming, &Outgoing);
-		Outgoing.SyscallNumber = *(ULONG_PTR*)IncomingAddress;
+		Outgoing.BufferData = (BYTE*)OutgoingAddress;
+		Outgoing.SyscallNumber = *(ULONG_PTR*)NAV_SYSCALL_NUMBER_PTR(IncomingAddress);
 
 		if (NAV_SYSCALL_TOTAL_SIZE(Outgoing.BufferSize) > PipeBufferData->PipeData->BufferSize) {
 			break;
 		}
 
-		IsSuccess = WriteFile(PipeBufferData->PipeHandle, (LPCVOID)OutgoingAddress,
-			PipeBufferData->PipeData->BufferSize, &BufferWrittenBytes, NULL);
+		LPVOID OutgoingBuffer = NavAllocMem(NAV_SYSCALL_TOTAL_SIZE(Outgoing.BufferSize));
+
+		if (OutgoingBuffer == NULL) {
+			break;
+		}
+
+		*(ULONG_PTR*)NAV_SYSCALL_NUMBER_PTR(OutgoingBuffer) = Outgoing.SyscallNumber;
+		*(DWORD*)NAV_SYSCALL_LENGTH_PTR(OutgoingBuffer) = Outgoing.BufferSize;
+
+		RtlCopyMemory((BYTE*)NAV_SYSCALL_BUFFER_PTR(OutgoingBuffer), Outgoing.BufferData, Outgoing.BufferSize);
+
+		IsSuccess = WriteFile(PipeBufferData->PipeHandle, (LPCVOID)OutgoingBuffer,
+			NAV_SYSCALL_TOTAL_SIZE(Outgoing.BufferSize), &BufferWrittenBytes, NULL);
+
+		NavFreeMem(OutgoingBuffer);
 
 		if (!IsSuccess || (PipeBufferData->PipeData->BufferSize != BufferWrittenBytes)) {
 			break;
@@ -82,6 +98,7 @@ DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
 
 DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) {
 	PNAV_NAMED_PIPE_DATA PipeData = (PNAV_NAMED_PIPE_DATA)ThreadParam;
+	PNAV_NAMED_PIPE_SEMAPHORE Semaphore = (PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved;
 
 	while (true) {
 		HANDLE PipeHandle = INVALID_HANDLE_VALUE;
@@ -98,6 +115,7 @@ DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) {
 			break;
 		}
 
+		Semaphore->PipeHandle = PipeHandle;
 		IsConnected = ConnectNamedPipe(PipeHandle, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
 
 		if (IsConnected) {
@@ -131,9 +149,11 @@ NAVSTATUS NAVAPI NavCreateNamedPipe(
 	HANDLE ThreadHandle = CreateThread(PipeData->ThreadSecurity, NULL,
 		(LPTHREAD_START_ROUTINE)NavPipeThreadRoutine, (LPVOID)PipeData, NULL, ThreadId);
 	if (ThreadHandle != NULL) {
-		PNAV_NAMED_PIPE_SEMAPHORE Semaphore = (PNAV_NAMED_PIPE_SEMAPHORE)NavAllocMem(sizeof(NAV_NAMED_PIPE_SEMAPHORE));
+		PNAV_NAMED_PIPE_SEMAPHORE Semaphore = 
+			(PNAV_NAMED_PIPE_SEMAPHORE)NavAllocMem(sizeof(NAV_NAMED_PIPE_SEMAPHORE));
 		Semaphore->EventHandle = CreateEventW(NULL, FALSE, TRUE, NULL);
 		Semaphore->ThreadHandle = ThreadHandle;
+		PipeData->Reserved = (LPVOID)Semaphore;
 		return NAV_CREATE_PIPE_STATUS_SUCCESS;
 	}
 	return NAV_CREATE_PIPE_STATUS_FAILED;
@@ -142,13 +162,95 @@ NAVSTATUS NAVAPI NavCreateNamedPipe(
 NAVSTATUS NAVAPI NavDeleteNamedPipe(
 	IN PNAV_NAMED_PIPE_DATA PipeData)
 {
-	PNAV_NAMED_PIPE_SEMAPHORE PipeSemaphore = (PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved;
-	if (WaitForSingleObject(PipeSemaphore->EventHandle, INFINITE) == WAIT_OBJECT_0) {
-		if (TerminateThread(PipeSemaphore->ThreadHandle, EXIT_SUCCESS) != FALSE) {
-			NavFreeMem(PipeSemaphore);
+	PNAV_NAMED_PIPE_SEMAPHORE Semaphore = (PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved;
+	if (WaitForSingleObject(Semaphore->EventHandle, INFINITE) == WAIT_OBJECT_0) {
+		if (TerminateThread(Semaphore->ThreadHandle, EXIT_SUCCESS) != FALSE) {
+			NavFreeMem(Semaphore);
 			NavFreeMem(PipeData);
+			DisconnectNamedPipe(Semaphore->PipeHandle);
+			CloseHandle(Semaphore->PipeHandle);
 			return NAV_CLOSE_PIPE_STATUS_SUCCESS;
 		}
 	}
 	return NAV_CLOSE_PIPE_STATUS_FAILED;
+}
+
+NAVSTATUS NAVAPI NavSyscallExecute(
+	IN LPCWSTR PipeName,
+	IN LPSECURITY_ATTRIBUTES PipeSecurity,
+	IN BYTE* Buffer,
+	IN DWORD Size,
+	IN DWORD SyscallBufferSize,
+	IN ULONG_PTR SyscallNumber,
+	OUT PNAV_SYSCALL_INTERRUPT_RESPONSE Response)
+{
+	HANDLE PipeHandle = CreateFileW(PipeName, GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_READ, PipeSecurity, OPEN_EXISTING, NULL, NULL);
+
+	BOOL Status = FALSE;
+	LPVOID ReallocBuffer = NULL;
+	DWORD BufferWrittenBytes = 0;
+	DWORD BufferReadBytes = 0;
+	DWORD PipeMode = PIPE_READMODE_MESSAGE;
+
+	if (SetNamedPipeHandleState(PipeHandle, &PipeMode, NULL, NULL) == FALSE) {
+		return NAV_SYSCALL_STATUS_FAILED;
+	}
+
+	if (NAV_SYSCALL_TOTAL_SIZE(Size) > SyscallBufferSize) {
+		return NAV_SYSCALL_STATUS_BUFFER_OVERFLOW;
+	}
+
+	ReallocBuffer = NavAllocMem(NAV_SYSCALL_TOTAL_SIZE(Size));
+
+	if (ReallocBuffer == NULL) {
+		CloseHandle(PipeHandle);
+		return NAV_SYSCALL_STATUS_MEMORY_ALLOCATION_FAILED;
+	}
+
+	*(ULONG_PTR*)NAV_SYSCALL_NUMBER_PTR(ReallocBuffer) = SyscallNumber;
+	*(DWORD*)NAV_SYSCALL_LENGTH_PTR(ReallocBuffer) = Size;
+
+	RtlCopyMemory((BYTE*)NAV_SYSCALL_BUFFER_PTR(ReallocBuffer), Buffer, Size);
+
+	Status = WriteFile(PipeHandle, (LPCVOID)ReallocBuffer, NAV_SYSCALL_TOTAL_SIZE(Size), &BufferWrittenBytes, NULL);
+
+	if (Status == FALSE) {
+		NavFreeMem(ReallocBuffer);
+		CloseHandle(PipeHandle);
+		return NAV_SYSCALL_STATUS_FAILED;
+	}
+
+	FlushFileBuffers(PipeHandle);
+	ReallocBuffer = NavReAllocMem(ReallocBuffer, SyscallBufferSize);
+
+	if (ReallocBuffer == NULL) {
+		CloseHandle(PipeHandle);
+		return NAV_SYSCALL_STATUS_MEMORY_ALLOCATION_FAILED;
+	}
+
+	do {
+		Status = ReadFile(PipeHandle, ReallocBuffer, NAV_SYSCALL_BUFFER_SIZE(SyscallBufferSize), 
+			&BufferReadBytes, NULL);
+		if (!Status && (GetLastError() != ERROR_MORE_DATA))
+			break;
+	} while (!Status);
+
+	RtlZeroMemory(Response, sizeof(NAV_SYSCALL_INTERRUPT_RESPONSE));
+
+	Response->BufferData = (BYTE*)NAV_SYSCALL_BUFFER_PTR(ReallocBuffer);
+	Response->BufferSize = *(DWORD*)NAV_SYSCALL_LENGTH_PTR(ReallocBuffer);
+	Response->SyscallNumber = *(ULONG_PTR*)NAV_SYSCALL_NUMBER_PTR(ReallocBuffer);
+
+	CloseHandle(PipeHandle);
+	return NAV_SYSCALL_STATUS_SUCCESS;
+}
+
+NAVSTATUS NAVAPI NavSyscallRelease(
+	IN PNAV_SYSCALL_INTERRUPT_RESPONSE Response)
+{
+	if (NavFreeMem(NAV_SYSCALL_BASE_PTR(Response->BufferData)) == NULL) {
+		return NAV_SYSCALL_RELEASE_STATUS_FAILED;
+	}
+	return NAV_SYSCALL_RELEASE_STATUS_SUCCESS;
 }
