@@ -187,6 +187,10 @@ NAVSTATUS NAVAPI NavSyscallExecute(
 	HANDLE PipeHandle = CreateFileW(PipeName, GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ, PipeSecurity, OPEN_EXISTING, NULL, NULL);
 
+	if (PipeHandle == INVALID_HANDLE_VALUE) {
+		return NAV_SYSCALL_STATUS_FAILED;
+	}
+
 	BOOL Status = FALSE;
 	LPVOID ReallocBuffer = NULL;
 	DWORD BufferWrittenBytes = 0;

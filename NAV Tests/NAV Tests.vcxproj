@@ -154,6 +154,7 @@
     <ClCompile Include="NAV Tests.cpp" />
     <ClCompile Include="nav\base\handles.cpp" />
     <ClCompile Include="nav\base\memory.cpp" />
+    <ClCompile Include="nav\base\minifilters.cpp" />
     <ClCompile Include="nav\base\privileges.cpp" />
     <ClCompile Include="nav\base\protection.cpp" />
     <ClCompile Include="nav\base\service.cpp" />
@@ -163,6 +164,7 @@
   <ItemGroup>
     <ClInclude Include="nav\base\handles.h" />
     <ClInclude Include="nav\base\memory.h" />
+    <ClInclude Include="nav\base\minifilters.h" />
     <ClInclude Include="nav\base\privileges.h" />
     <ClInclude Include="nav\base\protection.h" />
     <ClInclude Include="nav\base\service.h" />

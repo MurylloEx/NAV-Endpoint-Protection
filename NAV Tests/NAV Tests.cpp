@@ -5,54 +5,127 @@
 #define UNICODE
 #endif
 
-#include <vld.h>
+//#include <vld.h>
 #include <stdio.h>
-#include "nav/base/syscall.h"
-
-VOID NAVAPI NavSyscallRoutine(
-	IN PNAV_SYSCALL_INTERRUPT_REQUEST Incoming, 
-	OUT PNAV_SYSCALL_INTERRUPT_RESPONSE Outgoing) 
-{
-	//printf("%p\n", Incoming->BufferData);
-	Outgoing->BufferSize = 65530;
-	FillMemory(Outgoing->BufferData, 65500, 0xcc);
-}
+#include "nav/base/memory.h"
+#include "nav/base/winapi.h"
 
 
 
-VOID Tests() {
 
-	PNAV_NAMED_PIPE_DATA data = (PNAV_NAMED_PIPE_DATA)NavAllocMem(sizeof(NAV_NAMED_PIPE_DATA));
-	DWORD threadId = 0;
+typedef enum _NAV_FILESYSTEM_FILE_TYPE {
+	TYPE_FILE,
+	TYPE_DIRECTORY
+} NAV_FILESYSTEM_FILE_TYPE, *PNAV_FILESYSTEM_FILE_TYPE;
 
-	data->BufferSize = NAV_PIPE_BUFFER_SIZE;
-	data->MaxInstances = PIPE_UNLIMITED_INSTANCES;
-	data->ThreadSecurity = NULL;
-	data->PipeSecurity = NULL;
-	data->PipeName = L"\\\\.\\pipe\\NAV_NAMED_PIPE";
+typedef VOID(NAVAPI* PNAV_FILESYSTEM_FILTER_CALLBACK)(
+	IN LPWSTR FileName,
+	IN DWORD Action,
+	IN NAV_FILESYSTEM_FILE_TYPE FileType);
 
-	data->SyscallRoutine = NavSyscallRoutine;
+typedef struct _NAV_FILESYSTEM_FILTER {
+	DWORD ThreadId;
+	HANDLE ThreadHandle;
+	LPCWSTR FileName;
+	DWORD FileAccess;
+	DWORD FileShare;
+	DWORD FlagsAndAttributes;
+	DWORD BufferSize;
+	DWORD NotifyChanges;
+	BOOL WatchSubtrees;
+	PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback;
+} NAV_FILESYSTEM_FILTER, *PNAV_FILESYSTEM_FILTER;
 
-	NavCreateNamedPipe(data, &threadId);
+DWORD WINAPI NavFileSystemFilterThread(LPVOID Params) {
+	PNAV_FILESYSTEM_FILTER FsFilter = (PNAV_FILESYSTEM_FILTER)Params;
+	HANDLE FileHandle = CreateFileW(FsFilter->FileName, FsFilter->FileAccess, FsFilter->FileShare, 
+		NULL, OPEN_EXISTING, FsFilter->FlagsAndAttributes, NULL);
 
-	BYTE* buffer = (BYTE*)NavAllocMem(20);
-	for (ULONG i = 0; i < 20; i++) {
-		buffer[i] = (BYTE)i;
+	if (FileHandle == INVALID_HANDLE_VALUE) {
+		return EXIT_FAILURE;
 	}
 
-	Sleep(200);
+	LPVOID Buffer = NavAllocMem(FsFilter->BufferSize);
+	
+	if (Buffer == NULL) {
+		return EXIT_FAILURE;
+	}
 
-	NAV_SYSCALL_INTERRUPT_RESPONSE response = { 0 };
+	while (true) {
+		DWORD NotifyOffset = 0;
+		DWORD BytesReturned = 0;
+		DWORD BytesTransferred = 0;
+		OVERLAPPED Overlapped = { 0 };
+		FILE_NOTIFY_INFORMATION *FileNotify = NULL;
+		
+		ZeroMemory(Buffer, FsFilter->BufferSize);
+		
+		Overlapped.hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
 
-	NavSyscallExecute(L"\\\\.\\pipe\\NAV_NAMED_PIPE", NULL, buffer, 20, NAV_PIPE_BUFFER_SIZE, 76666, &response);
+		BOOL Status = ReadDirectoryChangesW(FileHandle, Buffer, FsFilter->BufferSize, FsFilter->WatchSubtrees,
+			FsFilter->NotifyChanges, &BytesReturned, &Overlapped, NULL);
 
-	getchar();
-	NavDeleteNamedPipe(data);
+		if (Status == FALSE)
+			continue;
+
+		Status = GetOverlappedResult(FileHandle, &Overlapped, &BytesTransferred, FALSE);
+
+		do {
+			FileNotify = (FILE_NOTIFY_INFORMATION*)((ULONG_PTR)Buffer + NotifyOffset);
+
+			NotifyOffset += FileNotify->NextEntryOffset;
+		} while (FileNotify->NextEntryOffset != NULL);
+	}
+
+
 }
+
+NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
+	IN LPCWSTR FileName,
+	IN DWORD FileAccess,
+	IN DWORD FileShare,
+	IN DWORD FlagsAndAttributes,
+	IN DWORD BufferSize,
+	IN DWORD NotifyChanges,
+	IN BOOL WatchSubtrees,
+	IN PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback,
+	OUT PNAV_FILESYSTEM_FILTER* FilesystemFilter)
+{
+	PNAV_FILESYSTEM_FILTER FsFilter = (PNAV_FILESYSTEM_FILTER)NavAllocMem(sizeof(NAV_FILESYSTEM_FILTER));
+
+	if (FsFilter == NULL) {
+		return EXIT_FAILURE;
+	}
+
+	FsFilter->FileName = FileName;
+	FsFilter->FileAccess = FileAccess;
+	FsFilter->FileShare = FileShare;
+	FsFilter->FlagsAndAttributes = FlagsAndAttributes;
+	FsFilter->BufferSize = BufferSize;
+	FsFilter->NotifyChanges = NotifyChanges;
+	FsFilter->WatchSubtrees = WatchSubtrees;
+	FsFilter->FilterCallback = FilterCallback;
+
+	FsFilter->ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)NavFileSystemFilterThread,
+		FsFilter, NULL, &FsFilter->ThreadId);
+
+	if (FsFilter->ThreadHandle == NULL) {
+		NavFreeMem(FsFilter);
+		return EXIT_FAILURE;
+	}
+
+	*FilesystemFilter = FsFilter;
+
+	return EXIT_SUCCESS;
+}
+
 
 int main(VOID)
 {
-	Tests();
-	
-	return 0;
+	PNAV_FILESYSTEM_FILTER fsflt = NULL;
+	NavRegisterFileSystemFilter(L"C:\\Users", GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_BACKUP_SEMANTICS, 65536,
+		FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
+		FILE_NOTIFY_CHANGE_CREATION, TRUE, NULL, &fsflt);
+	getchar();
 }
