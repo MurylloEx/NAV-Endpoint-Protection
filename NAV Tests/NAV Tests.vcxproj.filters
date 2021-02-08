@@ -45,6 +45,9 @@
     <ClCompile Include="nav\base\winapi.cpp">
       <Filter>Header Files\nav\base</Filter>
     </ClCompile>
+    <ClCompile Include="nav\base\minifilters.cpp">
+      <Filter>Header Files\nav\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nav\base\handles.h">
@@ -69,6 +72,9 @@
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
     <ClInclude Include="nav\base\winapi.h">
+      <Filter>Header Files\nav\base</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\base\minifilters.h">
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
   </ItemGroup>
