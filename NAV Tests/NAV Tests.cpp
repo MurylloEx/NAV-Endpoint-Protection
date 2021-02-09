@@ -70,8 +70,19 @@ DWORD WINAPI NavFileSystemFilterThread(LPVOID Params) {
 
 		Status = GetOverlappedResult(FileHandle, &Overlapped, &BytesTransferred, FALSE);
 
+		if (Status == FALSE) 
+			continue;
+		
 		do {
 			FileNotify = (FILE_NOTIFY_INFORMATION*)((ULONG_PTR)Buffer + NotifyOffset);
+			wchar_t* FileName = new wchar_t[FileNotify->FileNameLength+sizeof(wchar_t)];
+			
+			ZeroMemory(FileName, FileNotify->FileNameLength + sizeof(wchar_t));
+			CopyMemory(FileName, FileNotify->FileName, FileNotify->FileNameLength);
+
+			wprintf(L"%s\n", FileName);
+
+			delete[] FileName;
 
 			NotifyOffset += FileNotify->NextEntryOffset;
 		} while (FileNotify->NextEntryOffset != NULL);
@@ -106,6 +117,9 @@ NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
 	FsFilter->WatchSubtrees = WatchSubtrees;
 	FsFilter->FilterCallback = FilterCallback;
 
+	if ((FsFilter->FlagsAndAttributes & FILE_FLAG_OVERLAPPED) == FILE_FLAG_OVERLAPPED)
+		FsFilter->FlagsAndAttributes = FsFilter->FlagsAndAttributes & ~FILE_FLAG_OVERLAPPED;
+
 	FsFilter->ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)NavFileSystemFilterThread,
 		FsFilter, NULL, &FsFilter->ThreadId);
 
@@ -123,7 +137,7 @@ NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
 int main(VOID)
 {
 	PNAV_FILESYSTEM_FILTER fsflt = NULL;
-	NavRegisterFileSystemFilter(L"C:\\Users", GENERIC_READ,
+	NavRegisterFileSystemFilter(L"\\\\.\\C:\\", GENERIC_READ,
 		FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_BACKUP_SEMANTICS, 65536,
 		FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
 		FILE_NOTIFY_CHANGE_CREATION, TRUE, NULL, &fsflt);
