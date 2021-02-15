@@ -2,3 +2,67 @@
 
 #include "status.h"
 #include "memory.h"
+#include <shlwapi.h>
+
+#pragma comment(lib, "Shlwapi.lib")
+
+typedef enum _NAV_FILESYSTEM_ACTION_TYPE {
+	ACTION_CREATED,
+	ACTION_CHANGED,
+	ACTION_DELETED,
+	ACTION_RENAMED,
+	ACTION_UNKNOWN
+} NAV_FILESYSTEM_ACTION_TYPE, *PNAV_FILESYSTEM_ACTION_TYPE;
+
+typedef enum _NAV_FILESYSTEM_FILE_TYPE {
+	TYPE_FILE,
+	TYPE_FOLDER,
+	TYPE_DEVICE,
+	TYPE_UNKNOWN
+} NAV_FILESYSTEM_FILE_TYPE, *PNAV_FILESYSTEM_FILE_TYPE;
+
+typedef struct _NAV_FILESYSTEM_FILE_DATA {
+	LPWSTR SrcFileName;
+	LPWSTR DstFileName;
+} NAV_FILESYSTEM_FILE_DATA, *PNAV_FILESYSTEM_FILE_DATA;
+
+typedef VOID(NAVAPI* PNAV_FILESYSTEM_FILTER_CALLBACK)(
+	IN NAV_FILESYSTEM_FILE_DATA FileData,
+	IN NAV_FILESYSTEM_ACTION_TYPE Action,
+	IN NAV_FILESYSTEM_FILE_TYPE FileType);
+
+typedef struct _NAV_FILESYSTEM_FILTER {
+	DWORD ThreadId;
+	HANDLE ThreadHandle;
+	LPCWSTR FileName;
+	DWORD FileAccess;
+	DWORD FileShare;
+	DWORD FlagsAndAttributes;
+	DWORD BufferSize;
+	DWORD NotifyChanges;
+	BOOL WatchSubtrees;
+	LPVOID Reserved;
+	PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback;
+} NAV_FILESYSTEM_FILTER, *PNAV_FILESYSTEM_FILTER;
+
+
+LPWSTR NAVAPI NavNormalizeFileNotifyPath(
+	IN FILE_NOTIFY_INFORMATION *FileNotify,
+	IN LPCWSTR BaseFileName);
+
+NAV_FILESYSTEM_FILE_TYPE NAVAPI NavCheckFileType(
+	IN LPCWSTR TargetPath);
+
+NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
+	IN LPCWSTR FileName,
+	IN DWORD FileAccess,
+	IN DWORD FileShare,
+	IN DWORD FlagsAndAttributes,
+	IN DWORD BufferSize,
+	IN DWORD NotifyChanges,
+	IN BOOL WatchSubtrees,
+	IN PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback,
+	OUT PNAV_FILESYSTEM_FILTER* FilesystemFilter);
+
+NAVSTATUS NAVAPI NavUnregisterFileSystemFilter(
+	IN PNAV_FILESYSTEM_FILTER FilesystemFilter);

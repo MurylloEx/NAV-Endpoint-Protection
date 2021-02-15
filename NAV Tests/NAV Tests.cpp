@@ -7,139 +7,25 @@
 
 //#include <vld.h>
 #include <stdio.h>
-#include "nav/base/memory.h"
-#include "nav/base/winapi.h"
+#include "nav/base/minifilters.h"
 
 
-
-
-typedef enum _NAV_FILESYSTEM_FILE_TYPE {
-	TYPE_FILE,
-	TYPE_DIRECTORY
-} NAV_FILESYSTEM_FILE_TYPE, *PNAV_FILESYSTEM_FILE_TYPE;
-
-typedef VOID(NAVAPI* PNAV_FILESYSTEM_FILTER_CALLBACK)(
-	IN LPWSTR FileName,
-	IN DWORD Action,
-	IN NAV_FILESYSTEM_FILE_TYPE FileType);
-
-typedef struct _NAV_FILESYSTEM_FILTER {
-	DWORD ThreadId;
-	HANDLE ThreadHandle;
-	LPCWSTR FileName;
-	DWORD FileAccess;
-	DWORD FileShare;
-	DWORD FlagsAndAttributes;
-	DWORD BufferSize;
-	DWORD NotifyChanges;
-	BOOL WatchSubtrees;
-	PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback;
-} NAV_FILESYSTEM_FILTER, *PNAV_FILESYSTEM_FILTER;
-
-DWORD WINAPI NavFileSystemFilterThread(LPVOID Params) {
-	PNAV_FILESYSTEM_FILTER FsFilter = (PNAV_FILESYSTEM_FILTER)Params;
-	HANDLE FileHandle = CreateFileW(FsFilter->FileName, FsFilter->FileAccess, FsFilter->FileShare, 
-		NULL, OPEN_EXISTING, FsFilter->FlagsAndAttributes, NULL);
-
-	if (FileHandle == INVALID_HANDLE_VALUE) {
-		return EXIT_FAILURE;
-	}
-
-	LPVOID Buffer = NavAllocMem(FsFilter->BufferSize);
-	
-	if (Buffer == NULL) {
-		return EXIT_FAILURE;
-	}
-
-	while (true) {
-		DWORD NotifyOffset = 0;
-		DWORD BytesReturned = 0;
-		DWORD BytesTransferred = 0;
-		OVERLAPPED Overlapped = { 0 };
-		FILE_NOTIFY_INFORMATION *FileNotify = NULL;
-		
-		ZeroMemory(Buffer, FsFilter->BufferSize);
-		
-		Overlapped.hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
-
-		BOOL Status = ReadDirectoryChangesW(FileHandle, Buffer, FsFilter->BufferSize, FsFilter->WatchSubtrees,
-			FsFilter->NotifyChanges, &BytesReturned, &Overlapped, NULL);
-
-		if (Status == FALSE)
-			continue;
-
-		Status = GetOverlappedResult(FileHandle, &Overlapped, &BytesTransferred, FALSE);
-
-		if (Status == FALSE) 
-			continue;
-		
-		do {
-			FileNotify = (FILE_NOTIFY_INFORMATION*)((ULONG_PTR)Buffer + NotifyOffset);
-			wchar_t* FileName = new wchar_t[FileNotify->FileNameLength+sizeof(wchar_t)];
-			
-			ZeroMemory(FileName, FileNotify->FileNameLength + sizeof(wchar_t));
-			CopyMemory(FileName, FileNotify->FileName, FileNotify->FileNameLength);
-
-			wprintf(L"%s\n", FileName);
-
-			delete[] FileName;
-
-			NotifyOffset += FileNotify->NextEntryOffset;
-		} while (FileNotify->NextEntryOffset != NULL);
-	}
-
-
-}
-
-NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
-	IN LPCWSTR FileName,
-	IN DWORD FileAccess,
-	IN DWORD FileShare,
-	IN DWORD FlagsAndAttributes,
-	IN DWORD BufferSize,
-	IN DWORD NotifyChanges,
-	IN BOOL WatchSubtrees,
-	IN PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback,
-	OUT PNAV_FILESYSTEM_FILTER* FilesystemFilter)
+VOID NAVAPI FsCallback(
+	NAV_FILESYSTEM_FILE_DATA FileData, 
+	NAV_FILESYSTEM_ACTION_TYPE Action, 
+	NAV_FILESYSTEM_FILE_TYPE Type) 
 {
-	PNAV_FILESYSTEM_FILTER FsFilter = (PNAV_FILESYSTEM_FILTER)NavAllocMem(sizeof(NAV_FILESYSTEM_FILTER));
-
-	if (FsFilter == NULL) {
-		return EXIT_FAILURE;
+	if (Action == NAV_FILESYSTEM_ACTION_TYPE::ACTION_CREATED) {
+		wprintf(L"%s --> %d\n", FileData.SrcFileName, Type);
 	}
-
-	FsFilter->FileName = FileName;
-	FsFilter->FileAccess = FileAccess;
-	FsFilter->FileShare = FileShare;
-	FsFilter->FlagsAndAttributes = FlagsAndAttributes;
-	FsFilter->BufferSize = BufferSize;
-	FsFilter->NotifyChanges = NotifyChanges;
-	FsFilter->WatchSubtrees = WatchSubtrees;
-	FsFilter->FilterCallback = FilterCallback;
-
-	if ((FsFilter->FlagsAndAttributes & FILE_FLAG_OVERLAPPED) == FILE_FLAG_OVERLAPPED)
-		FsFilter->FlagsAndAttributes = FsFilter->FlagsAndAttributes & ~FILE_FLAG_OVERLAPPED;
-
-	FsFilter->ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)NavFileSystemFilterThread,
-		FsFilter, NULL, &FsFilter->ThreadId);
-
-	if (FsFilter->ThreadHandle == NULL) {
-		NavFreeMem(FsFilter);
-		return EXIT_FAILURE;
-	}
-
-	*FilesystemFilter = FsFilter;
-
-	return EXIT_SUCCESS;
 }
-
 
 int main(VOID)
 {
 	PNAV_FILESYSTEM_FILTER fsflt = NULL;
-	NavRegisterFileSystemFilter(L"\\\\.\\C:\\", GENERIC_READ,
+	NavRegisterFileSystemFilter(L"\\\\?\\C:\\", GENERIC_READ,
 		FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_BACKUP_SEMANTICS, 65536,
-		FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
-		FILE_NOTIFY_CHANGE_CREATION, TRUE, NULL, &fsflt);
+		FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION | 
+		FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME, TRUE, FsCallback, &fsflt);
 	getchar();
 }
