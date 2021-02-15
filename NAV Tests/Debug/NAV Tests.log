@@ -1,1 +1,13 @@
-﻿LINK : fatal error LNK1104: cannot open file 'C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\Debug\NAV Tests.exe'
+﻿  NAV Tests.cpp
+c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav tests.cpp(26): warning C4474: 'scanf_s' : too many arguments passed for format string
+  c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav tests.cpp(26): note: placeholders and their parameters expect 1 variadic arguments, but 2 were provided
+  handles.cpp
+  memory.cpp
+  minifilters.cpp
+  privileges.cpp
+  protection.cpp
+  service.cpp
+  syscall.cpp
+  winapi.cpp
+  Generating Code...
+  NAV Tests.vcxproj -> C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\Debug\NAV Tests.exe
