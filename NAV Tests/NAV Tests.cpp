@@ -5,27 +5,35 @@
 #define UNICODE
 #endif
 
+#pragma comment(lib, "Iphlpapi.lib")
+
 //#include <vld.h>
+
 #include <stdio.h>
-#include "nav/base/minifilters.h"
+#include <windows.h>
+
+#include "nav/base/hook.h"
 
 
-VOID NAVAPI FsCallback(
-	NAV_FILESYSTEM_FILE_DATA FileData, 
-	NAV_FILESYSTEM_ACTION_TYPE Action, 
-	NAV_FILESYSTEM_FILE_TYPE Type) 
+static VOID(WINAPI * TrueSleep)(DWORD dwMilliseconds) = Sleep;
+
+VOID WINAPI TimedSleep(DWORD dwMilliseconds)
 {
-	if (Action == NAV_FILESYSTEM_ACTION_TYPE::ACTION_CREATED) {
-		wprintf(L"%s --> %d\n", FileData.SrcFileName, Type);
-	}
+	printf("Hooked!");
+	TrueSleep(dwMilliseconds + 50);
 }
 
-int main(VOID)
+int main(void)
 {
-	PNAV_FILESYSTEM_FILTER fsflt = NULL;
-	NavRegisterFileSystemFilter(L"\\\\?\\C:\\", GENERIC_READ,
-		FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_FLAG_BACKUP_SEMANTICS, 65536,
-		FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION | 
-		FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME, TRUE, FsCallback, &fsflt);
+	NavHookRestoreAfterWith();
+	NavHookTransactionBegin();
+	NavHookUpdateThread(GetCurrentThread());
+	NavHookDetourAttachFunction(&(PVOID&)TrueSleep, TimedSleep);
+	NavHookTransactionCommit();
+
+	Sleep(200);
+
+	printf("imprimir algo");
 	getchar();
+	return 0;
 }

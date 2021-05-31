@@ -91,7 +91,7 @@ LPWSTR NAVAPI NavQueryFileNameByHandle(
 	}
 }
 
-BOOL NAVAPI NavGetProcessHandles(
+BOOL NAVAPI NavQueryProcessHandles(
 	IN ULONG ProcessId,
 	IN PNAV_PROCESS_HANDLES ProcessHandles) 
 {
@@ -251,7 +251,7 @@ BOOL NAVAPI NavFreeProcessHandles(
 	return Status;
 }
 
-BOOL NAVAPI NavGetFilesByProcessHandles(
+BOOL NAVAPI NavQueryFilesByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_FILES ProcessFiles) 
 {
@@ -349,7 +349,7 @@ BOOL NAVAPI NavFreeOpenFiles(
 	return Status;
 }
 
-BOOL NAVAPI NavGetKeysByProcessHandles(
+BOOL NAVAPI NavQueryKeysByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_KEYS ProcessKeys)
 {
@@ -446,7 +446,7 @@ BOOL NAVAPI NavFreeOpenKeys(
 	return Status;
 }
 
-BOOL NAVAPI NavGetProcessesByProcessHandles(
+BOOL NAVAPI NavQueryProcessesByProcessHandles(
 	IN PNAV_PROCESS_HANDLES ProcessHandles,
 	IN PNAV_PROCESS_OPEN_PROCESSES ProcessBuffer)
 {

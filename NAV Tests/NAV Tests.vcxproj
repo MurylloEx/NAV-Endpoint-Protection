@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClCompile Include="NAV Tests.cpp" />
     <ClCompile Include="nav\base\handles.cpp" />
+    <ClCompile Include="nav\base\hook.cpp" />
     <ClCompile Include="nav\base\memory.cpp" />
     <ClCompile Include="nav\base\minifilters.cpp" />
     <ClCompile Include="nav\base\privileges.cpp" />
@@ -163,6 +164,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nav\base\handles.h" />
+    <ClInclude Include="nav\base\hook.h" />
     <ClInclude Include="nav\base\memory.h" />
     <ClInclude Include="nav\base\minifilters.h" />
     <ClInclude Include="nav\base\privileges.h" />
@@ -172,7 +174,17 @@
     <ClInclude Include="nav\base\syscall.h" />
     <ClInclude Include="nav\base\winapi.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Detours.4.0.1\build\native\Detours.targets" Condition="Exists('..\packages\Detours.4.0.1\build\native\Detours.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Detours.4.0.1\build\native\Detours.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Detours.4.0.1\build\native\Detours.targets'))" />
+  </Target>
 </Project>
