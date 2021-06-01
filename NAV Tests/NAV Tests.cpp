@@ -14,13 +14,14 @@
 
 #include "nav/base/hook.h"
 
+ULONG __stdcall Soma(ULONG a, ULONG b) {
+	return a + b;
+}
 
-static VOID(WINAPI * TrueSleep)(DWORD dwMilliseconds) = Sleep;
+static ULONG (__stdcall *OriginalSoma)(ULONG a, ULONG b) = Soma;
 
-VOID WINAPI TimedSleep(DWORD dwMilliseconds)
-{
-	printf("Hooked!");
-	TrueSleep(dwMilliseconds + 50);
+ULONG __stdcall SomaAdulterada(ULONG a, ULONG b) {
+	return OriginalSoma(a, b) + 5;
 }
 
 int main(void)
@@ -28,12 +29,10 @@ int main(void)
 	NavHookRestoreAfterWith();
 	NavHookTransactionBegin();
 	NavHookUpdateThread(GetCurrentThread());
-	NavHookDetourAttachFunction(&(PVOID&)TrueSleep, TimedSleep);
+	NavHookDetourAttachFunction(&(PVOID&)OriginalSoma, SomaAdulterada);
 	NavHookTransactionCommit();
 
-	Sleep(200);
-
-	printf("imprimir algo");
+	printf("Resultado da soma: %d", Soma(1, 2));
 	getchar();
 	return 0;
 }

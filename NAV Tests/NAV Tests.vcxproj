@@ -161,6 +161,7 @@
     <ClCompile Include="nav\base\service.cpp" />
     <ClCompile Include="nav\base\syscall.cpp" />
     <ClCompile Include="nav\base\winapi.cpp" />
+    <ClCompile Include="nav\base\wmi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nav\base\handles.h" />
@@ -173,6 +174,7 @@
     <ClInclude Include="nav\base\status.h" />
     <ClInclude Include="nav\base\syscall.h" />
     <ClInclude Include="nav\base\winapi.h" />
+    <ClInclude Include="nav\base\wmi.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
