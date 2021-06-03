@@ -11,7 +11,7 @@
 #define NAV_SYSCALL_NUMBER_PTR(P) ((LPVOID)P)
 #define NAV_SYSCALL_LENGTH_PTR(P) ((LPVOID)((ULONG_PTR)P + sizeof(ULONG_PTR)))
 #define NAV_SYSCALL_BUFFER_PTR(P) ((LPVOID)((ULONG_PTR)P + sizeof(ULONG_PTR) + sizeof(DWORD)))
-#define NAV_SYSCALL_BASE_PTR(P)((LPVOID)((ULONG_PTR)P - (sizeof(ULONG_PTR) + sizeof(DWORD))))
+#define NAV_SYSCALL_BASE_PTR(P)	((LPVOID)((ULONG_PTR)P - (sizeof(ULONG_PTR) + sizeof(DWORD))))
 
 typedef struct _NAV_SYSCALL_INTERRUPT_RESPONSE {
 	ULONG_PTR SyscallNumber;

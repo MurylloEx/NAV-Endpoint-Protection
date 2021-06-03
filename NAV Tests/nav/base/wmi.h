@@ -21,16 +21,18 @@
 
 class CNavWmiEventSink : public IWbemObjectSink
 {
+	ULONG64 m_Flags = 0;
+	PVOID m_Parameters = NULL;
 	LONG m_lRef = 0;
-	PVOID m_pCallbacks[7] = { 0 }; /* The value is 7 because we can assume
-									7 types of distincts callbacks. */
+	PVOID *m_pCallbacks = NULL; 
+
 public:
 
 	CNavWmiEventSink() {
-		ZeroMemory(m_pCallbacks, sizeof(PVOID) * 7);
+		this->m_pCallbacks = new PVOID[7]();
 	}
 	~CNavWmiEventSink() {
-		ZeroMemory(m_pCallbacks, sizeof(PVOID) * 7);
+		delete[] this->m_pCallbacks;
 	}
 
 	virtual ULONG STDMETHODCALLTYPE AddRef();
@@ -56,45 +58,68 @@ public:
 	BOOL STDMETHODCALLTYPE UnregisterCallback(
 		/* [in] */ ULONG ulCallbackType);
 
+	VOID STDMETHODCALLTYPE SetParameters(
+		/* [in] */ PVOID pData);
+
+	PVOID STDMETHODCALLTYPE GetParameters();
+
+	VOID STDMETHODCALLTYPE SetFlags(
+		/* [in] */ ULONG64 flags);
+
+	ULONG64 STDMETHODCALLTYPE GetFlags();
 };
 
 
 typedef ULONG(STDMETHODCALLTYPE *LPNavWmiAddReferenceCallback)(
-	/* [in] */ const CNavWmiEventSink* pCNavEvSink);
+	/* [in] */ CNavWmiEventSink* pCNavEvSink);
 typedef ULONG(STDMETHODCALLTYPE *LPNavWmiReleaseCallback)(
-	/* [in] */ const CNavWmiEventSink* pCNavEvSink);
+	/* [in] */ CNavWmiEventSink* pCNavEvSink);
 typedef HRESULT(STDMETHODCALLTYPE *LPNavWmiQueryInterfaceCallback)(
-	/* [in] */ const CNavWmiEventSink* pCNavEvSink,
+	/* [in] */ CNavWmiEventSink* pCNavEvSink,
 	/* [in] */ REFIID riid,
 	/* [in] */ void** ppv);
 typedef HRESULT(STDMETHODCALLTYPE *LPNavWmiIndicateCallback)(
-	/* [in] */ const CNavWmiEventSink* pCNavEvSink,
+	/* [in] */ CNavWmiEventSink* pCNavEvSink,
 	/* [in] */ LONG lObjectCount,
 	/* [in] */ IWbemClassObject __RPC_FAR *__RPC_FAR *apObjArray);
 typedef HRESULT(STDMETHODCALLTYPE *LPNavWmiSetEventCallback)(
-	/* [in] */ const CNavWmiEventSink* pCNavEvSink,
+	/* [in] */ CNavWmiEventSink* pCNavEvSink,
 	/* [in] */ LONG lFlags,
 	/* [in] */ HRESULT hResult,
 	/* [in] */ BSTR strParam,
 	/* [in] */ IWbemClassObject __RPC_FAR *pObjParam);
 typedef VOID(STDMETHODCALLTYPE *LPNavWmiStatusCompleteCallback)(
-	/* [in] */ const CNavWmiEventSink* pCNavEvSink,
+	/* [in] */ CNavWmiEventSink* pCNavEvSink,
 	/* [in] */ HRESULT hResult);
 typedef VOID(STDMETHODCALLTYPE *LPNavWmiStatusProgressCallback)(
-	/* [in] */ const CNavWmiEventSink* pCNavEvSink);
+	/* [in] */ CNavWmiEventSink* pCNavEvSink);
 
 
 BOOL NAVAPI NavWmiCoInitializeEx();
 BOOL NAVAPI NavWmiCoInitializeSecurity();
 BOOL NAVAPI NavWmiCoCreateInstance(
-	/* [in] */ IWbemLocator* pLocator);
-BOOL NAVAPI NavWmiConnectServer(
+	/* [out] */ IWbemLocator** ppLocator);
+BOOL NAVAPI NavWmiCoConnectServer(
 	/* [in] */ IWbemLocator* pLocator,
-	/* [in] */ IWbemServices* pSvc);
+	/* [out] */ IWbemServices** ppSvc);
 BOOL NAVAPI NavWmiCoSetProxyBlanket(
 	/* [in] */ IWbemServices* pSvc);
-BOOL NAVAPI NavWmiExecNotificationQueryAsync(
+BOOL NAVAPI NavWmiCoCreateUnsecuredApartment(
+	/* [out] */ IUnsecuredApartment** ppUnsecApp,
+	/* [in] */ CNavWmiEventSink* pSink,
+	/* [out] */ IUnknown** ppStubUnk,
+	/* [out] */ IWbemObjectSink** ppStubSink);
+BOOL NAVAPI NavWmiCoExecNotificationQueryAsync(
 	/* [in] */ IWbemServices* pSvc,
 	/* [in] */ IWbemObjectSink* pStubSink,
-	/* [in] */ const char* strQueryLang,
-	/* [in] */ const char* strQuery);
+	/* [in] */ const OLECHAR* strQueryLang,
+	/* [in] */ const OLECHAR* strQuery);
+BOOL NAVAPI NavWmiCoReadPropertyByName(
+	/* [in] */ const OLECHAR* pszPropName,
+	/* [in] */ VARIANT* pValue,
+	/* [in] */ IWbemClassObject* wbemObj,
+	/* [in] */ CIMTYPE* pValueType);
+VOID NAVAPI NavWmiCoUninitialize();
+BOOL NAVAPI NavWmiCoCancelNotificationQueryAsync(
+	/* [in] */ IWbemServices* pSvc,
+	/* [in] */ IWbemObjectSink* pStubSink);

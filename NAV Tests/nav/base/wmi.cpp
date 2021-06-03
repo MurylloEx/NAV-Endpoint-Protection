@@ -73,7 +73,7 @@ BOOL CNavWmiEventSink::RegisterCallback(
 	/* [in] */ PVOID pCallback)
 {
 	if ((ulCallbackType > 0) && (ulCallbackType < 7)) {
-		m_pCallbacks[ulCallbackType] = pCallback;
+		this->m_pCallbacks[ulCallbackType] = pCallback;
 		return TRUE;
 	}
 	return FALSE;
@@ -83,11 +83,34 @@ BOOL CNavWmiEventSink::UnregisterCallback(
 	/* [in] */ ULONG ulCallbackType)
 {
 	if ((ulCallbackType > 0) && (ulCallbackType < 7)) {
-		m_pCallbacks[ulCallbackType] = NULL;
+		this->m_pCallbacks[ulCallbackType] = NULL;
 		return TRUE;
 	}
 	return FALSE;	
 }
+
+VOID CNavWmiEventSink::SetParameters(
+	/* [in] */ PVOID pData)
+{
+	this->m_Parameters = pData;
+}
+
+PVOID CNavWmiEventSink::GetParameters()
+{
+	return this->m_Parameters;
+}
+
+VOID CNavWmiEventSink::SetFlags(
+	/* [in] */ ULONG64 flags)
+{
+	this->m_Flags = flags;
+}
+
+ULONG64 CNavWmiEventSink::GetFlags()
+{
+	return this->m_Flags;
+}
+
 
 BOOL NAVAPI NavWmiCoInitializeEx() 
 {
@@ -98,30 +121,31 @@ BOOL NAVAPI NavWmiCoInitializeEx()
 
 BOOL NAVAPI NavWmiCoInitializeSecurity() 
 {
-	if (FAILED(CoInitializeSecurity(
+	HRESULT Status = CoInitializeSecurity(
 		NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT,
-		RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL)))
+		RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
+	if (FAILED(Status) && (Status != RPC_E_TOO_LATE))
 		return FALSE;
 	return TRUE;
 }
 
 BOOL NAVAPI NavWmiCoCreateInstance(
-	IWbemLocator* pLocator) 
+	IWbemLocator** ppLocator) 
 {
 	if (FAILED(CoCreateInstance(
 		CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
-		IID_IWbemLocator, (LPVOID*)&pLocator)))
+		IID_IWbemLocator, (LPVOID*)ppLocator)))
 		return FALSE;
 	return TRUE;
 }
 
-BOOL NAVAPI NavWmiConnectServer(
+BOOL NAVAPI NavWmiCoConnectServer(
 	IWbemLocator* pLocator, 
-	IWbemServices* pSvc)
+	IWbemServices** ppSvc)
 {
 	if (FAILED(pLocator->ConnectServer(
 		_bstr_t(L"ROOT\\CIMV2"), NULL, NULL,
-		NULL, NULL, NULL, NULL, &pSvc)))
+		NULL, NULL, NULL, NULL, ppSvc)))
 		return FALSE;
 	return TRUE;
 }
@@ -136,14 +160,67 @@ BOOL NAVAPI NavWmiCoSetProxyBlanket(
 	return TRUE;
 }
 
-BOOL NAVAPI NavWmiExecNotificationQueryAsync(
+BOOL NAVAPI NavWmiCoCreateUnsecuredApartment(
+	IUnsecuredApartment** ppUnsecApp, 
+	CNavWmiEventSink* pSink, 
+	IUnknown** ppStubUnk, 
+	IWbemObjectSink** ppStubSink)
+{
+	if (FAILED(CoCreateInstance(CLSID_UnsecuredApartment, NULL,
+		CLSCTX_LOCAL_SERVER, IID_IUnsecuredApartment, (void**)ppUnsecApp)))
+		return FALSE;
+	pSink->AddRef();
+	(*ppUnsecApp)->CreateObjectStub(pSink, ppStubUnk);
+	(*ppStubUnk)->QueryInterface(IID_IWbemObjectSink, (void**)ppStubSink);
+	return TRUE;
+}
+
+BOOL NAVAPI NavWmiCoExecNotificationQueryAsync(
 	IWbemServices* pSvc, 
 	IWbemObjectSink* pStubSink, 
-	const char* strQueryLang, 
-	const char* strQuery)
+	const OLECHAR* strQueryLang, 
+	const OLECHAR* strQuery)
 {
-	if (FAILED(pSvc->ExecNotificationQueryAsync(
-		_bstr_t(strQueryLang), _bstr_t(strQuery), WBEM_FLAG_SEND_STATUS, NULL, pStubSink)))
+	BSTR pszQueryLang = SysAllocString(strQueryLang);
+	BSTR pszQuery = SysAllocString(strQuery);
+
+	HRESULT status = pSvc->ExecNotificationQueryAsync(
+		pszQueryLang, pszQuery, WBEM_FLAG_SEND_STATUS, NULL, pStubSink);
+
+	SysFreeString(pszQueryLang);
+	SysFreeString(pszQuery);
+
+	if (FAILED(status))
+		return FALSE;
+	return TRUE;
+}
+
+BOOL NAVAPI NavWmiCoReadPropertyByName(
+	const OLECHAR* pszPropName, 
+	VARIANT* pValue, 
+	IWbemClassObject* wbemObj, 
+	CIMTYPE* pValueType)
+{
+	BSTR propName = SysAllocString(pszPropName);
+	HRESULT status = wbemObj->Get(propName, NULL, pValue, pValueType, NULL);
+
+	SysFreeString(propName);
+
+	if (FAILED(status))
+		return FALSE;
+	return TRUE;
+}
+
+VOID NAVAPI NavWmiCoUninitialize()
+{
+	CoUninitialize();
+}
+
+BOOL NAVAPI NavWmiCoCancelNotificationQueryAsync(
+	IWbemServices* pSvc,
+	IWbemObjectSink* pStubSink)
+{
+	if (FAILED(pSvc->CancelAsyncCall(pStubSink)))
 		return FALSE;
 	return TRUE;
 }

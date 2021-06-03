@@ -190,3 +190,394 @@ NAVSTATUS NAVAPI NavUnregisterFileSystemFilter(
 	NavFreeMem(FilesystemFilter);
 	return NAV_UNREGISTER_FS_FILTER_STATUS_SUCCESS;
 }
+
+HRESULT STDMETHODCALLTYPE NavProcessFilterCallback(
+	IN CNavWmiEventSink* pCNavEvSink,
+	IN LONG lObjectCount,
+	IN IWbemClassObject __RPC_FAR *__RPC_FAR *apObjArray)
+{
+	for (LONG Idx = 0; Idx < lObjectCount; Idx++) {
+		IWbemClassObject* pWbemObject = apObjArray[Idx];
+		VARIANT Value = { 0 };
+		CIMTYPE ValueType = 0;
+
+		DWORD ProcessId = 0;
+		DWORD ParentProcessId = 0;
+		UINT64 CreationTime = 0;
+		LPWSTR ProcessName = NULL;
+
+		if (NavWmiCoReadPropertyByName(L"TIME_CREATED", &Value, pWbemObject, &ValueType) == FALSE)
+			continue;
+		CreationTime = V_UINT_PTR(&Value);
+
+		if (NavWmiCoReadPropertyByName(L"ProcessId", &Value, pWbemObject, &ValueType) == FALSE)
+			continue;
+		ProcessId = V_UINT(&Value);
+
+		if (NavWmiCoReadPropertyByName(L"ParentProcessId", &Value, pWbemObject, &ValueType) == FALSE)
+			continue;
+		ParentProcessId = V_UINT(&Value);
+
+		if (pCNavEvSink->GetFlags() == NAV_PROCESS_NOTIFY_TYPE::TYPE_CREATION) {
+			if (NavWmiCoReadPropertyByName(L"ProcessName", &Value, pWbemObject, &ValueType) == FALSE)
+				continue;
+			ProcessName = (LPWSTR)V_UINT_PTR(&Value);
+		}
+		
+		PNAV_PROCESS_FILTER PsFilter = (PNAV_PROCESS_FILTER)pCNavEvSink->GetParameters();
+		PNAV_PROCESS_DATA PsData = (PNAV_PROCESS_DATA)NavAllocMem(sizeof(NAV_PROCESS_DATA));
+
+		PsData->ProcessId = ProcessId;
+		PsData->ParentProcessId = ParentProcessId;
+		PsData->CreationTime = CreationTime;
+		PsData->ProcessName = ProcessName;
+
+		PsFilter->FilterCallback(*PsData, (NAV_PROCESS_NOTIFY_TYPE)pCNavEvSink->GetFlags());
+
+		NavFreeMem(PsData);
+	}
+	return WBEM_S_NO_ERROR;
+}
+
+NAVSTATUS NAVAPI NavRegisterProcessFilter(
+	IN PNAV_PROCESS_FILTER_CALLBACK FilterCallback,
+	OUT PNAV_PROCESS_FILTER* ProcessFilter)
+{
+	PNAV_PROCESS_FILTER PsFilter = (PNAV_PROCESS_FILTER)NavAllocMem(sizeof(NAV_PROCESS_FILTER));
+
+	PsFilter->FilterCallback = FilterCallback;
+	PsFilter->EventSinkCreation = new CNavWmiEventSink;
+	PsFilter->EventSinkTermination = new CNavWmiEventSink;
+
+	PsFilter->EventSinkCreation->RegisterCallback(NAV_WMI_CALLBACK_INDICATE, (PVOID)NavProcessFilterCallback);
+	PsFilter->EventSinkCreation->SetParameters((PVOID)PsFilter);
+	PsFilter->EventSinkCreation->SetFlags(NAV_PROCESS_NOTIFY_TYPE::TYPE_CREATION);
+
+	PsFilter->EventSinkTermination->RegisterCallback(NAV_WMI_CALLBACK_INDICATE, (PVOID)NavProcessFilterCallback);
+	PsFilter->EventSinkTermination->SetParameters((PVOID)PsFilter);
+	PsFilter->EventSinkTermination->SetFlags(NAV_PROCESS_NOTIFY_TYPE::TYPE_TERMINATION);
+
+	if (NavWmiCoInitializeEx() == FALSE){
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoInitializeSecurity() == FALSE){
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoCreateInstance(&PsFilter->LocatorCreation) == FALSE){
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoCreateInstance(&PsFilter->LocatorTermination) == FALSE){
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoConnectServer(PsFilter->LocatorCreation, &PsFilter->ServicesCreation) == FALSE){
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoConnectServer(PsFilter->LocatorTermination, &PsFilter->ServicesTermination) == FALSE){
+		PsFilter->ServicesCreation->Release();
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoSetProxyBlanket(PsFilter->ServicesCreation) == FALSE){
+		PsFilter->ServicesCreation->Release();
+		PsFilter->ServicesTermination->Release();
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoSetProxyBlanket(PsFilter->ServicesTermination) == FALSE){
+		PsFilter->ServicesCreation->Release();
+		PsFilter->ServicesTermination->Release();
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoCreateUnsecuredApartment(&PsFilter->UnsecuredApartmentCreation,
+		PsFilter->EventSinkCreation,
+		&PsFilter->StubUnknownCreation,
+		&PsFilter->ObjectSinkCreation) == FALSE)
+	{
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		PsFilter->ServicesCreation->Release();
+		PsFilter->ServicesTermination->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoCreateUnsecuredApartment(&PsFilter->UnsecuredApartmentTermination,
+		PsFilter->EventSinkTermination,
+		&PsFilter->StubUnknownTermination,
+		&PsFilter->ObjectSinkTermination) == FALSE)
+	{
+		PsFilter->ServicesCreation->Release();
+		PsFilter->ServicesTermination->Release();
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		PsFilter->UnsecuredApartmentCreation->Release();
+		PsFilter->StubUnknownCreation->Release();
+		PsFilter->ObjectSinkCreation->Release();
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoExecNotificationQueryAsync(PsFilter->ServicesCreation, PsFilter->ObjectSinkCreation,
+		L"WQL", L"SELECT * FROM Win32_ProcessStartTrace") == FALSE) 
+	{
+		PsFilter->ServicesCreation->Release();
+		PsFilter->ServicesTermination->Release();
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		PsFilter->UnsecuredApartmentCreation->Release();
+		PsFilter->UnsecuredApartmentTermination->Release();
+		PsFilter->StubUnknownCreation->Release();
+		PsFilter->StubUnknownTermination->Release();
+		PsFilter->ObjectSinkCreation->Release();
+		PsFilter->ObjectSinkTermination->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoExecNotificationQueryAsync(PsFilter->ServicesTermination, PsFilter->ObjectSinkTermination,
+		L"WQL", L"SELECT * FROM Win32_ProcessStopTrace") == FALSE)
+	{
+		PsFilter->ServicesCreation->Release();
+		PsFilter->ServicesTermination->Release();
+		PsFilter->LocatorCreation->Release();
+		PsFilter->LocatorTermination->Release();
+		PsFilter->UnsecuredApartmentCreation->Release();
+		PsFilter->UnsecuredApartmentTermination->Release();
+		PsFilter->StubUnknownCreation->Release();
+		PsFilter->StubUnknownTermination->Release();
+		PsFilter->ObjectSinkCreation->Release();
+		PsFilter->ObjectSinkTermination->Release();
+		goto WMI_FAILURE;
+	}
+
+	*ProcessFilter = PsFilter;
+
+	return NAV_REGISTER_PROCESS_FILTER_STATUS_SUCCESS;
+
+WMI_FAILURE:
+	delete PsFilter->EventSinkCreation;
+	delete PsFilter->EventSinkTermination;
+	NavWmiCoUninitialize();
+	return NAV_REGISTER_PROCESS_FILTER_STATUS_FAILED;
+}
+
+NAVSTATUS NAVAPI NavUnregisterProcessFilter(
+	IN PNAV_PROCESS_FILTER ProcessFilter)
+{
+	if (NavWmiCoCancelNotificationQueryAsync(
+		ProcessFilter->ServicesCreation, ProcessFilter->ObjectSinkCreation) == FALSE)
+		return NAV_UNREGISTER_PROCESS_FILTER_STATUS_FAILED;
+	if (NavWmiCoCancelNotificationQueryAsync(
+		ProcessFilter->ServicesTermination, ProcessFilter->ObjectSinkTermination) == FALSE)
+		return NAV_UNREGISTER_PROCESS_FILTER_STATUS_FAILED;
+
+	ProcessFilter->ServicesCreation->Release();
+	ProcessFilter->ServicesTermination->Release();
+	ProcessFilter->LocatorCreation->Release();
+	ProcessFilter->LocatorTermination->Release();
+	ProcessFilter->UnsecuredApartmentCreation->Release();
+	ProcessFilter->UnsecuredApartmentTermination->Release();
+	ProcessFilter->StubUnknownCreation->Release();
+	ProcessFilter->StubUnknownTermination->Release();
+	ProcessFilter->ObjectSinkCreation->Release();
+	ProcessFilter->ObjectSinkTermination->Release();
+	delete ProcessFilter->EventSinkCreation;
+	delete ProcessFilter->EventSinkTermination;
+
+	NavFreeMem(ProcessFilter);
+
+	return NAV_UNREGISTER_PROCESS_FILTER_STATUS_SUCCESS;
+}
+
+HRESULT STDMETHODCALLTYPE NavPnpDeviceFilterCallback(
+	IN CNavWmiEventSink* pCNavEvSink,
+	IN LONG lObjectCount,
+	IN IWbemClassObject __RPC_FAR *__RPC_FAR *apObjArray)
+{
+	for (LONG Idx = 0; Idx < lObjectCount; Idx++) {
+		IWbemClassObject* pWbemObject = apObjArray[Idx];
+		VARIANT Value = { 0 };
+		CIMTYPE ValueType = 0;
+
+		UINT64 CreationTime = 0;
+		LPWSTR DriveName = NULL;
+
+		if (NavWmiCoReadPropertyByName(L"TIME_CREATED", &Value, pWbemObject, &ValueType) == FALSE)
+			continue;
+		CreationTime = V_UINT_PTR(&Value);
+		if (NavWmiCoReadPropertyByName(L"DriveName", &Value, pWbemObject, &ValueType) == FALSE)
+			continue;
+		DriveName = (LPWSTR)V_UINT_PTR(&Value);
+
+		PNAV_PNP_DEVICE_FILTER PnpFilter = (PNAV_PNP_DEVICE_FILTER)pCNavEvSink->GetParameters();
+		PNAV_PNP_DEVICE_DATA PnpData = (PNAV_PNP_DEVICE_DATA)NavAllocMem(sizeof(NAV_PNP_DEVICE_DATA));
+
+		PnpData->CreationTime = CreationTime;
+		PnpData->DriveName = DriveName;
+
+		PnpFilter->FilterCallback(*PnpData, (NAV_PNP_DEVICE_NOTIFY_TYPE)pCNavEvSink->GetFlags());
+
+		NavFreeMem(PnpData);
+	}
+	return WBEM_S_NO_ERROR;
+}
+
+NAVSTATUS NAVAPI NavRegisterPnpDeviceFilter(
+	IN PNAV_PNP_DEVICE_FILTER_CALLBACK FilterCallback,
+	OUT PNAV_PNP_DEVICE_FILTER* DeviceFilter)
+{
+	PNAV_PNP_DEVICE_FILTER PnpFilter = (PNAV_PNP_DEVICE_FILTER)NavAllocMem(sizeof(NAV_PNP_DEVICE_FILTER));
+
+	PnpFilter->FilterCallback = FilterCallback;
+	PnpFilter->EventSinkInserted = new CNavWmiEventSink;
+	PnpFilter->EventSinkRemoved = new CNavWmiEventSink;
+
+	PnpFilter->EventSinkInserted->RegisterCallback(NAV_WMI_CALLBACK_INDICATE, (PVOID)NavPnpDeviceFilterCallback);
+	PnpFilter->EventSinkInserted->SetParameters((PVOID)PnpFilter);
+	PnpFilter->EventSinkInserted->SetFlags(NAV_PNP_DEVICE_NOTIFY_TYPE::TYPE_INSERT);
+
+	PnpFilter->EventSinkRemoved->RegisterCallback(NAV_WMI_CALLBACK_INDICATE, (PVOID)NavPnpDeviceFilterCallback);
+	PnpFilter->EventSinkRemoved->SetParameters((PVOID)PnpFilter);
+	PnpFilter->EventSinkRemoved->SetFlags(NAV_PNP_DEVICE_NOTIFY_TYPE::TYPE_REMOVE);
+
+	if (NavWmiCoInitializeEx() == FALSE) {
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoInitializeSecurity() == FALSE) {
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoCreateInstance(&PnpFilter->LocatorInserted) == FALSE) {
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoCreateInstance(&PnpFilter->LocatorRemoved) == FALSE) {
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoConnectServer(PnpFilter->LocatorInserted, &PnpFilter->ServicesInserted) == FALSE) {
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoConnectServer(PnpFilter->LocatorRemoved, &PnpFilter->ServicesRemoved) == FALSE) {
+		PnpFilter->ServicesInserted->Release();
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoSetProxyBlanket(PnpFilter->ServicesInserted) == FALSE) {
+		PnpFilter->ServicesInserted->Release();
+		PnpFilter->ServicesRemoved->Release();
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoSetProxyBlanket(PnpFilter->ServicesRemoved) == FALSE) {
+		PnpFilter->ServicesInserted->Release();
+		PnpFilter->ServicesRemoved->Release();
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoCreateUnsecuredApartment(&PnpFilter->UnsecuredApartmentInserted,
+		PnpFilter->EventSinkInserted,
+		&PnpFilter->StubUnknownInserted,
+		&PnpFilter->ObjectSinkInserted) == FALSE)
+	{
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		PnpFilter->ServicesInserted->Release();
+		PnpFilter->ServicesRemoved->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoCreateUnsecuredApartment(&PnpFilter->UnsecuredApartmentRemoved,
+		PnpFilter->EventSinkRemoved,
+		&PnpFilter->StubUnknownRemoved,
+		&PnpFilter->ObjectSinkRemoved) == FALSE)
+	{
+		PnpFilter->ServicesInserted->Release();
+		PnpFilter->ServicesRemoved->Release();
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		PnpFilter->UnsecuredApartmentInserted->Release();
+		PnpFilter->StubUnknownInserted->Release();
+		PnpFilter->ObjectSinkInserted->Release();
+		goto WMI_FAILURE;
+	}
+
+	if (NavWmiCoExecNotificationQueryAsync(PnpFilter->ServicesInserted, PnpFilter->ObjectSinkInserted,
+		L"WQL", L"SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 2") == FALSE)
+	{
+		PnpFilter->ServicesInserted->Release();
+		PnpFilter->ServicesRemoved->Release();
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		PnpFilter->UnsecuredApartmentInserted->Release();
+		PnpFilter->UnsecuredApartmentRemoved->Release();
+		PnpFilter->StubUnknownInserted->Release();
+		PnpFilter->StubUnknownRemoved->Release();
+		PnpFilter->ObjectSinkInserted->Release();
+		PnpFilter->ObjectSinkRemoved->Release();
+		goto WMI_FAILURE;
+	}
+	if (NavWmiCoExecNotificationQueryAsync(PnpFilter->ServicesRemoved, PnpFilter->ObjectSinkRemoved,
+		L"WQL", L"SELECT * FROM Win32_DeviceChangeEvent WHERE EventType = 3") == FALSE)
+	{
+		PnpFilter->ServicesInserted->Release();
+		PnpFilter->ServicesRemoved->Release();
+		PnpFilter->LocatorInserted->Release();
+		PnpFilter->LocatorRemoved->Release();
+		PnpFilter->UnsecuredApartmentInserted->Release();
+		PnpFilter->UnsecuredApartmentRemoved->Release();
+		PnpFilter->StubUnknownInserted->Release();
+		PnpFilter->StubUnknownRemoved->Release();
+		PnpFilter->ObjectSinkInserted->Release();
+		PnpFilter->ObjectSinkRemoved->Release();
+		goto WMI_FAILURE;
+	}
+
+	*DeviceFilter = PnpFilter;
+
+	return NAV_REGISTER_PNP_DEVICE_FILTER_STATUS_SUCCESS;
+
+WMI_FAILURE:
+	delete PnpFilter->EventSinkInserted;
+	delete PnpFilter->EventSinkRemoved;
+	NavWmiCoUninitialize();
+	return NAV_REGISTER_PNP_DEVICE_FILTER_STATUS_FAILED;
+}
+
+NAVSTATUS NAVAPI NavUnregisterPnpDeviceFilter(
+	PNAV_PNP_DEVICE_FILTER PnpFilter)
+{
+	if (NavWmiCoCancelNotificationQueryAsync(
+		PnpFilter->ServicesInserted, PnpFilter->ObjectSinkInserted) == FALSE)
+		return NAV_UNREGISTER_PNP_DEVICE_FILTER_STATUS_FAILED;
+	if (NavWmiCoCancelNotificationQueryAsync(
+		PnpFilter->ServicesRemoved, PnpFilter->ObjectSinkRemoved) == FALSE)
+		return NAV_UNREGISTER_PNP_DEVICE_FILTER_STATUS_FAILED;
+
+	PnpFilter->ServicesInserted->Release();
+	PnpFilter->ServicesRemoved->Release();
+	PnpFilter->LocatorInserted->Release();
+	PnpFilter->LocatorRemoved->Release();
+	PnpFilter->UnsecuredApartmentInserted->Release();
+	PnpFilter->UnsecuredApartmentRemoved->Release();
+	PnpFilter->StubUnknownInserted->Release();
+	PnpFilter->StubUnknownRemoved->Release();
+	PnpFilter->ObjectSinkInserted->Release();
+	PnpFilter->ObjectSinkRemoved->Release();
+	delete PnpFilter->EventSinkInserted;
+	delete PnpFilter->EventSinkRemoved;
+
+	NavFreeMem(PnpFilter);
+
+	return NAV_UNREGISTER_PNP_DEVICE_FILTER_STATUS_SUCCESS;
+}
