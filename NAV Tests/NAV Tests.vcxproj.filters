@@ -54,6 +54,12 @@
     <ClCompile Include="nav\base\wmi.cpp">
       <Filter>Header Files\nav\base</Filter>
     </ClCompile>
+    <ClCompile Include="nav\base\network.cpp">
+      <Filter>Header Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\injection.cpp">
+      <Filter>Header Files\nav\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nav\base\handles.h">
@@ -87,6 +93,12 @@
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
     <ClInclude Include="nav\base\wmi.h">
+      <Filter>Header Files\nav\base</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\base\network.h">
+      <Filter>Header Files\nav\base</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\base\injection.h">
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
   </ItemGroup>

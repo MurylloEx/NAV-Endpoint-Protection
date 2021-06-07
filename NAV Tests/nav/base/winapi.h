@@ -1,7 +1,15 @@
 #pragma once
-#pragma comment(lib, "ntdll.lib")
 
+#pragma comment(lib, "ntdll.lib")
+#pragma comment(lib, "Iphlpapi.lib")
+#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "Wtsapi32.lib")
+#pragma comment(lib, "wbemuuid.lib")
+#pragma comment(lib, "Shlwapi.lib")
+
+//#define _WINSOCKAPI_ 
 #include <Windows.h>
+#include <iphlpapi.h>
 
 /* NT Functions and undocumented APIs */
 #define NTDLL							(LPSTR)"NTDLL.DLL"

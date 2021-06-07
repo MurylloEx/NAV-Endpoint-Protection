@@ -1,64 +1,38 @@
-// NAV Tests.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #ifndef UNICODE
 #define UNICODE
 #endif
 
-#pragma comment(lib, "Iphlpapi.lib")
-
-//#include <vld.h>
+#include <vld.h>
 
 #include <stdio.h>
-#include <windows.h>
 
-#include "nav/base/hook.h"
-#include "nav/base/wmi.h"
-#include "nav/base/minifilters.h"
-
-ULONG __stdcall Soma(ULONG a, ULONG b) {
-	return a + b;
-}
-
-static ULONG (__stdcall *OriginalSoma)(ULONG a, ULONG b) = Soma;
-
-ULONG __stdcall SomaAdulterada(ULONG a, ULONG b) {
-	return OriginalSoma(a, b) + 5;
-}
-
-VOID FilterCallback(NAV_PNP_DEVICE_DATA Data, NAV_PNP_DEVICE_NOTIFY_TYPE NotifyType)
-{
-	if (NotifyType == NAV_PNP_DEVICE_NOTIFY_TYPE::TYPE_INSERT) {
-		wprintf(L"%s - %s\n", L"Inserted", Data.DriveName);
-	}
-	else {
-		wprintf(L"%s - %s\n", L"Removed", Data.DriveName);
-	}
-}
-
-VOID FilterCallback2(NAV_PROCESS_DATA Data, NAV_PROCESS_NOTIFY_TYPE NotifyType)
-{
-	if (NotifyType == NAV_PROCESS_NOTIFY_TYPE::TYPE_CREATION) {
-		wprintf(L"%s - %s with Pid: %d\n", L"Created", Data.ProcessName, Data.ProcessId);
-	}
-	else {
-		wprintf(L"%s with Pid: %d\n", L"Terminated", Data.ProcessId);
-	}
-	
-}
+#include "nav/base/network.h"
 
 int main(void)
 {
-	PNAV_PNP_DEVICE_FILTER Filter;
+	NAV_TCP_INFO tcpInfo = { 0 };
 
-	NavRegisterPnpDeviceFilter(FilterCallback, &Filter);
+	NavRetrieveTcpTable(&tcpInfo);
 
-	PNAV_PROCESS_FILTER Filter2;
+	for (DWORD k = 0; k < tcpInfo.TcpTablev4->dwNumEntries; k++) {
+		MIB_TCPROW_OWNER_PID row = tcpInfo.TcpTablev4->table[k];
+		printf("IPv4 PID: %d | Remote Port: %d | Local Port: %d | TCP State: %d\n", 
+			row.dwOwningPid,
+			ntohs((u_short)row.dwRemotePort),
+			ntohs((u_short)row.dwLocalPort),
+			row.dwState);
+	}
 
-	NavRegisterProcessFilter(FilterCallback2, &Filter2);
+	for (DWORD k = 0; k < tcpInfo.TcpTablev6->dwNumEntries; k++) {
+		MIB_TCP6ROW_OWNER_PID row = tcpInfo.TcpTablev6->table[k];
+		printf("IPv6 PID: %d | Remote Port: %d | Local Port: %d | TCP State: %d\n",
+			row.dwOwningPid,
+			ntohs((u_short)row.dwRemotePort),
+			ntohs((u_short)row.dwLocalPort),
+			row.dwState);
+	}
 
-
-	//NAVSTATUS result = NavUnregisterProcessFilter(PsFilter);
+	NavReleaseTcpTable(&tcpInfo);
 
 	getchar();
 	return 0;

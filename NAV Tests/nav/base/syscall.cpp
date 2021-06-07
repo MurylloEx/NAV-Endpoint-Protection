@@ -1,5 +1,4 @@
 #include "syscall.h"
-#include <stdio.h>
 
 typedef struct _NAV_NAMED_PIPE_DATA_SHADOW {
 	HANDLE PipeHandle;

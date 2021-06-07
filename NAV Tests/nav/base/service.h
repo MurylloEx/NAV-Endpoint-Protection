@@ -1,7 +1,6 @@
 #pragma once
-#pragma comment(lib, "Wtsapi32.lib")
 
-#include <Windows.h>
+#include "winapi.h"
 #include <WtsApi32.h>
 #include "status.h"
 

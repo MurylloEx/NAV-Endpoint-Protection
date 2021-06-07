@@ -6,8 +6,7 @@
 #include <comdef.h>
 #include <Wbemidl.h>
 #include "status.h"
-
-#pragma comment(lib, "wbemuuid.lib")
+#include "winapi.h"
 
 
 #define NAV_WMI_CALLBACK_ADD_REFERENCE		0UL

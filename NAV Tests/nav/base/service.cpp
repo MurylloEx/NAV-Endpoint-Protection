@@ -24,6 +24,8 @@ NAVSTATUS NAVAPI NavCreateProcessAsImpersonatedUser(
 		ThreadSecurity, FALSE, CreationFlags, NULL, ExecutableDirectory, 
 		StartupInfo, ProcessInformation);
 
+	CloseHandle(*UserToken);
+
 	if (ProcessStatus == FALSE) {
 		return NAV_CREATE_PROCESS_STATUS_FAILED;
 	}

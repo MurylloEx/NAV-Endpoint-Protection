@@ -1,8 +1,10 @@
 ﻿  NAV Tests.cpp
   handles.cpp
   hook.cpp
+  injection.cpp
   memory.cpp
   minifilters.cpp
+  network.cpp
   privileges.cpp
   protection.cpp
   service.cpp

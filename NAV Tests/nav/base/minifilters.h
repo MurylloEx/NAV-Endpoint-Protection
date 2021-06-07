@@ -2,10 +2,9 @@
 
 #include "status.h"
 #include "memory.h"
+#include "winapi.h"
 #include "wmi.h"
 #include <shlwapi.h>
-
-#pragma comment(lib, "Shlwapi.lib")
 
 typedef enum _NAV_FILESYSTEM_ACTION_TYPE {
 	ACTION_CREATED,
