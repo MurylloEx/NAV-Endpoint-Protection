@@ -39,3 +39,27 @@ NAVSTATUS NAVAPI NavInjectLoadLibraryRoutine(
 
 	return NAV_INJECT_LOAD_LIBRARY_ROUTINE_STATUS_SUCCESS;
 }
+
+NAVSTATUS NAVAPI NavInjectGlobalModule(
+	IN LPWSTR ModulePath,
+	IN LPSTR Procedure,
+	OUT HHOOK* HookHandle)
+{
+	HMODULE Module = LoadLibraryExW(ModulePath, NULL, DONT_RESOLVE_DLL_REFERENCES);
+	if (Module == NULL) {
+		return NAV_INJECT_GLOBAL_MODULE_STATUS_FAILED;
+	}
+
+	HOOKPROC ProcedureAddress = (HOOKPROC)GetProcAddress(Module, Procedure);
+	if (ProcedureAddress == NULL) {
+		return NAV_INJECT_GLOBAL_MODULE_STATUS_FAILED;
+	}
+
+	HHOOK Hook = SetWindowsHookW(WH_GETMESSAGE, ProcedureAddress);
+	if (Hook == NULL) {
+		return NAV_INJECT_GLOBAL_MODULE_STATUS_FAILED;
+	}
+
+	*HookHandle = Hook;
+	return NAV_INJECT_GLOBAL_MODULE_STATUS_SUCCESS;
+}
