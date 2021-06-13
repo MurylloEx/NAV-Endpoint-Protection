@@ -2,37 +2,20 @@
 #define UNICODE
 #endif
 
-#include <vld.h>
-
+#include "nav/base/winapi.h"
+#include "nav/base/status.h"
+#include "nav/base/memory.h"
+#include "nav/base/injection.h"
+#include <TlHelp32.h>
 #include <stdio.h>
+//#include <vld.h>
 
-#include "nav/base/network.h"
+#define TARGET_PROCESS 5320
 
-int main(void)
-{
-	NAV_TCP_INFO tcpInfo = { 0 };
 
-	NavRetrieveTcpTable(&tcpInfo);
-
-	for (DWORD k = 0; k < tcpInfo.TcpTablev4->dwNumEntries; k++) {
-		MIB_TCPROW_OWNER_PID row = tcpInfo.TcpTablev4->table[k];
-		printf("IPv4 PID: %d | Remote Port: %d | Local Port: %d | TCP State: %d\n", 
-			row.dwOwningPid,
-			ntohs((u_short)row.dwRemotePort),
-			ntohs((u_short)row.dwLocalPort),
-			row.dwState);
-	}
-
-	for (DWORD k = 0; k < tcpInfo.TcpTablev6->dwNumEntries; k++) {
-		MIB_TCP6ROW_OWNER_PID row = tcpInfo.TcpTablev6->table[k];
-		printf("IPv6 PID: %d | Remote Port: %d | Local Port: %d | TCP State: %d\n",
-			row.dwOwningPid,
-			ntohs((u_short)row.dwRemotePort),
-			ntohs((u_short)row.dwLocalPort),
-			row.dwState);
-	}
-
-	NavReleaseTcpTable(&tcpInfo);
+int main(void){
+	LPCWSTR dllName = L"C:\\users\\murilo\\desktop\\zwquerysysteminformation\\outros\\assembly\\dllexample_x86.dll";
+	NAVSTATUS res = NavExecuteRemoteInstruction(TARGET_PROCESS, dllName, LoadLibraryW, NAVX86);
 
 	getchar();
 	return 0;

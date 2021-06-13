@@ -10,6 +10,7 @@
 //#define _WINSOCKAPI_ 
 #include <Windows.h>
 #include <iphlpapi.h>
+#include <TlHelp32.h>
 
 /* NT Functions and undocumented APIs */
 #define NTDLL							(LPSTR)"NTDLL.DLL"
