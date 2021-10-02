@@ -2,9 +2,6 @@
 
 typedef unsigned long NAVSTATUS, *PNAVSTATUS, *LPNAVSTATUS;
 
-#define NAVX86 0
-#define NAVX64 1
-
 #define NAVAPI __stdcall
 
 #define NAV_SUCCESS(x) (((NAVSTATUS)x == 1) || ((NAVSTATUS)x >= 0x7fffffff))

@@ -13,16 +13,17 @@
 #include <TlHelp32.h>
 
 /* NT Functions and undocumented APIs */
-#define NTDLL							(LPSTR)"NTDLL.DLL"
-#define KERNEL32						(LPSTR)"KERNEL32.DLL"
-#define ADVAPI32						(LPSTR)"ADVAPI32.DLL"
-#define USER32							(LPSTR)"USER32.DLL"
+#define NTDLL							"NTDLL.DLL"
+#define KERNEL32						"KERNEL32.DLL"
+#define ADVAPI32						"ADVAPI32.DLL"
+#define USER32							"USER32.DLL"
 
-#define NtQuerySystemInformationName	(LPSTR)"NtQuerySystemInformation"
-#define NtDuplicateObjectName			(LPSTR)"NtDuplicateObject"
-#define NtQueryObjectName				(LPSTR)"NtQueryObject"
-#define NtQueryKeyName					(LPSTR)"NtQueryKey"
-#define NtSetInformationProcessName		(LPSTR)"NtSetInformationProcess"
+#define NtQuerySystemInformationName	"NtQuerySystemInformation"
+#define NtDuplicateObjectName			"NtDuplicateObject"
+#define NtQueryObjectName				"NtQueryObject"
+#define NtQueryKeyName					"NtQueryKey"
+#define NtSetInformationProcessName		"NtSetInformationProcess"
+#define RtlInitUnicodeStringName		"RtlInitUnicodeString"
 
 /* NTSTATUS Macros */
 #ifndef NT_SUCCESS
@@ -170,8 +171,9 @@ typedef NTSTATUS(NTAPI *PNtSetInformationProcess)(
 	PVOID	ProcessInformation,
 	ULONG	ProcessInformationLength);
 
-/* NAV exported functions */
-FARPROC NavGetProcAddress(_In_ LPSTR LibraryName, _In_ LPSTR FunctionName);
+typedef VOID(NTAPI *PRtlInitUnicodeString)(
+	PUNICODE_STRING Target,
+	PCWSTR Source);
 
 NTSTATUS NTAPI NtQuerySystemInformation(
 	ULONG SystemInformationClass,
@@ -207,3 +209,7 @@ NTSTATUS NTAPI NtSetInformationProcess(
 	ULONG	ProcessInformationClass,
 	PVOID	ProcessInformation,
 	ULONG	ProcessInformationLength);
+
+VOID NTAPI RtlInitUnicodeString(
+	PUNICODE_STRING Target,
+	PCWSTR Source);

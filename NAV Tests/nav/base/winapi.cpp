@@ -1,8 +1,8 @@
 #include "winapi.h"
 
-FARPROC NavGetProcAddress(
-	_In_ LPSTR LibraryName, 
-	_In_ LPSTR FunctionName) 
+FARPROC WINAPI GetFastProcAddress(
+	_In_ LPCSTR LibraryName, 
+	_In_ LPCSTR FunctionName) 
 {
 	HMODULE LibraryHandle = GetModuleHandleA(LibraryName);
 	if (LibraryHandle == NULL) {
@@ -19,7 +19,7 @@ NTSTATUS NTAPI NtQuerySystemInformation(
 {
 	/*Load and retrieve the address of NtQuerySystemInformation API*/
 	PNtQuerySystemInformation VNtQuerySystemInformation = 
-		(PNtQuerySystemInformation)NavGetProcAddress(NTDLL, NtQuerySystemInformationName);
+		(PNtQuerySystemInformation)GetFastProcAddress(NTDLL, NtQuerySystemInformationName);
 
 	return VNtQuerySystemInformation(
 		SystemInformationClass, 
@@ -38,7 +38,8 @@ NTSTATUS NTAPI NtDuplicateObject(
 	ULONG Options) 
 {
 	/*Load and retrieve the address of NtDuplicateObject API*/
-	PNtDuplicateObject VNtDuplicateObject = (PNtDuplicateObject)NavGetProcAddress(NTDLL, NtDuplicateObjectName);
+	PNtDuplicateObject VNtDuplicateObject = 
+		(PNtDuplicateObject)GetFastProcAddress(NTDLL, NtDuplicateObjectName);
 
 	return VNtDuplicateObject(
 		SourceProcessHandle,
@@ -58,7 +59,8 @@ NTSTATUS NTAPI NtQueryObject(
 	PULONG ReturnLength) 
 {
 	/*Load and retrieve the address of NtQueryObject API*/
-	PNtQueryObject VNtQueryObject = (PNtQueryObject)NavGetProcAddress(NTDLL, NtQueryObjectName);
+	PNtQueryObject VNtQueryObject = 
+		(PNtQueryObject)GetFastProcAddress(NTDLL, NtQueryObjectName);
 
 	return VNtQueryObject(
 		ObjectHandle, 
@@ -76,7 +78,7 @@ NTSTATUS NTAPI NtQueryKey(
 	PULONG                ResultLength) 
 {
 	/*Load and retrieve the address of NtQueryKey API*/
-	PNtQueryKey VNtQueryKey = (PNtQueryKey)NavGetProcAddress(NTDLL, NtQueryKeyName);
+	PNtQueryKey VNtQueryKey = (PNtQueryKey)GetFastProcAddress(NTDLL, NtQueryKeyName);
 
 	return VNtQueryKey(
 		KeyHandle, 
@@ -94,11 +96,22 @@ NTSTATUS NTAPI NtSetInformationProcess(
 {
 	/*Load and retrieve the address of NtSetInformationProcess API*/
 	PNtSetInformationProcess VNtSetInformationProcess = 
-		(PNtSetInformationProcess)NavGetProcAddress(NTDLL, NtSetInformationProcessName);
+		(PNtSetInformationProcess)GetFastProcAddress(NTDLL, NtSetInformationProcessName);
 
 	return VNtSetInformationProcess(
 		ProcessHandle,
 		ProcessInformationClass,
 		ProcessInformation,
 		ProcessInformationLength);
+}
+
+VOID NTAPI RtlInitUnicodeString(
+	PUNICODE_STRING Target,
+	PCWSTR Source)
+{
+	/*Load and retrieve the address of RtlInitUnicodeString API*/
+	PRtlInitUnicodeString VRtlInitUnicodeString =
+		(PRtlInitUnicodeString)GetFastProcAddress(NTDLL, RtlInitUnicodeStringName);
+
+	return VRtlInitUnicodeString(Target, Source);
 }

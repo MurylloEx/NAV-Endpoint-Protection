@@ -1,17 +1,2 @@
 ﻿  NAV Tests.cpp
-  injection.cpp
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(413): warning C4311: 'type cast': pointer truncation from 'BYTE *' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(413): warning C4302: 'type cast': truncation from 'BYTE *' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(413): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(413): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(413): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(414): warning C4311: 'type cast': pointer truncation from 'BYTE *' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(414): warning C4302: 'type cast': truncation from 'BYTE *' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(414): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(414): warning C4311: 'type cast': pointer truncation from 'LPVOID' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(414): warning C4302: 'type cast': truncation from 'LPVOID' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(415): warning C4311: 'type cast': pointer truncation from 'BYTE *' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(415): warning C4302: 'type cast': truncation from 'BYTE *' to 'DWORD'
-c:\users\murilo\documents\visual studio 2017\projects\nav-endpoint-protection\nav tests\nav\base\injection.cpp(415): warning C4312: 'type cast': conversion from 'DWORD' to 'DWORD *' of greater size
-  Generating Code...
   NAV Tests.vcxproj -> C:\Users\Murilo\Documents\Visual Studio 2017\Projects\NAV-Endpoint-Protection\x64\Debug\NAV Tests.exe

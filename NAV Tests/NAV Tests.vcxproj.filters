@@ -57,7 +57,10 @@
     <ClCompile Include="nav\base\network.cpp">
       <Filter>Header Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\base\injection.cpp">
+    <ClCompile Include="nav\base\loader.cpp">
+      <Filter>Header Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\system.cpp">
       <Filter>Header Files\nav\base</Filter>
     </ClCompile>
   </ItemGroup>
@@ -98,7 +101,10 @@
     <ClInclude Include="nav\base\network.h">
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\base\injection.h">
+    <ClInclude Include="nav\base\loader.h">
+      <Filter>Header Files\nav\base</Filter>
+    </ClInclude>
+    <ClInclude Include="nav\base\system.h">
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
   </ItemGroup>
