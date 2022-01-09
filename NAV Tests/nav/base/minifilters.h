@@ -6,7 +6,7 @@
 #include "wmi.h"
 #include <shlwapi.h>
 
-typedef enum _NAV_FILESYSTEM_ACTION_TYPE {
+typedef enum class _NAV_FILESYSTEM_ACTION_TYPE {
 	ACTION_CREATED,
 	ACTION_CHANGED,
 	ACTION_DELETED,
@@ -14,7 +14,7 @@ typedef enum _NAV_FILESYSTEM_ACTION_TYPE {
 	ACTION_UNKNOWN
 } NAV_FILESYSTEM_ACTION_TYPE, *PNAV_FILESYSTEM_ACTION_TYPE;
 
-typedef enum _NAV_FILESYSTEM_FILE_TYPE {
+typedef enum class _NAV_FILESYSTEM_FILE_TYPE {
 	TYPE_FILE,
 	TYPE_FOLDER,
 	TYPE_DEVICE,
@@ -42,6 +42,8 @@ typedef struct _NAV_FILESYSTEM_FILTER {
 	DWORD NotifyChanges;
 	BOOL WatchSubtrees;
 	LPVOID Reserved;
+	BOOL IsRegistered;
+	HANDLE UnregisteredEventHandle;
 	PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback;
 } NAV_FILESYSTEM_FILTER, *PNAV_FILESYSTEM_FILTER;
 

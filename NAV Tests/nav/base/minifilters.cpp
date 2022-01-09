@@ -4,6 +4,8 @@ LPWSTR NAVAPI NavNormalizeFileNotifyPath(
 	IN FILE_NOTIFY_INFORMATION *FileNotify,
 	IN LPCWSTR BaseFileName)
 {
+#pragma warning(push)
+#pragma warning(disable:6386)	
 	LPWSTR RelFileName = new wchar_t[FileNotify->FileNameLength + sizeof(wchar_t)];
 	ZeroMemory(RelFileName, FileNotify->FileNameLength + sizeof(wchar_t));
 	CopyMemory(RelFileName, FileNotify->FileName, FileNotify->FileNameLength);
@@ -11,13 +13,15 @@ LPWSTR NAVAPI NavNormalizeFileNotifyPath(
 	INT BasePathSize = lstrlenW((LPCWSTR)BaseFileName);
 	INT SubPathSize = lstrlenW((LPCWSTR)RelFileName);
 
-	LPWSTR AbFileName = new wchar_t[BasePathSize + SubPathSize + sizeof(wchar_t)];
-	ZeroMemory(AbFileName, BasePathSize + SubPathSize + sizeof(wchar_t));
+	LPWSTR AbFileName = new wchar_t[BasePathSize + SubPathSize + 1];
+	ZeroMemory(AbFileName, (BasePathSize + SubPathSize + 1) * sizeof(wchar_t));
+
 
 	PathCombineW(AbFileName, BaseFileName, RelFileName);
 	delete[] RelFileName;
 
 	return AbFileName;
+#pragma warning(pop)
 }
 
 NAV_FILESYSTEM_FILE_TYPE NAVAPI NavCheckFileType(
@@ -65,6 +69,10 @@ DWORD WINAPI NavFileSystemFilterThread(LPVOID Params) {
 
 		Overlapped.hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
 
+		if (Overlapped.hEvent == NULL) {
+			continue;
+		}
+
 		BOOL Status = ReadDirectoryChangesW(FileHandle, Buffer, FsFilter->BufferSize, FsFilter->WatchSubtrees,
 			FsFilter->NotifyChanges, &BytesReturned, &Overlapped, NULL);
 
@@ -87,13 +95,20 @@ DWORD WINAPI NavFileSystemFilterThread(LPVOID Params) {
 
 		ResetEvent(Overlapped.hEvent);
 
+		if (FsFilter->IsRegistered == FALSE) {
+			NavFreeMem(Buffer);
+			CloseHandle(Overlapped.hEvent);
+			SetEvent(FsFilter->UnregisteredEventHandle);
+			return EXIT_SUCCESS;
+		}
+
 		do {
 			FileNotify = (FILE_NOTIFY_INFORMATION*)((ULONG_PTR)Buffer + NotifyOffset);
 
 			if (FileNotify->Action == FILE_ACTION_RENAMED_NEW_NAME) {
 				NotifyOffset += FileNotify->NextEntryOffset;
 				continue;
-			}
+			} 
 
 			NAV_FILESYSTEM_ACTION_TYPE Action = NAV_FILESYSTEM_ACTION_TYPE::ACTION_UNKNOWN;
 			NAV_FILESYSTEM_FILE_TYPE Type = NAV_FILESYSTEM_FILE_TYPE::TYPE_UNKNOWN;
@@ -167,11 +182,14 @@ NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
 	if ((FsFilter->FlagsAndAttributes & FILE_FLAG_OVERLAPPED) == FILE_FLAG_OVERLAPPED)
 		FsFilter->FlagsAndAttributes = FsFilter->FlagsAndAttributes & ~FILE_FLAG_OVERLAPPED;
 
+	FsFilter->UnregisteredEventHandle = CreateEventW(NULL, TRUE, FALSE, NULL);
 	FsFilter->ThreadHandle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)NavFileSystemFilterThread,
 		FsFilter, NULL, &FsFilter->ThreadId);
 
 	if (FsFilter->ThreadHandle == NULL) {
 		NavFreeMem(FsFilter);
+		if (FsFilter->UnregisteredEventHandle != NULL)
+			CloseHandle(FsFilter->UnregisteredEventHandle);
 		return NAV_REGISTER_FS_FILTER_STATUS_FAILED;
 	}
 
@@ -183,11 +201,14 @@ NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
 NAVSTATUS NAVAPI NavUnregisterFileSystemFilter(
 	IN PNAV_FILESYSTEM_FILTER FilesystemFilter)
 {
-	if (TerminateThread(FilesystemFilter->ThreadHandle, EXIT_SUCCESS) == FALSE) {
+	FilesystemFilter->IsRegistered = FALSE;
+	if (WaitForSingleObject(FilesystemFilter->UnregisteredEventHandle, INFINITE) != WAIT_OBJECT_0) {
+		CloseHandle(FilesystemFilter->UnregisteredEventHandle);
 		return NAV_UNREGISTER_FS_FILTER_STATUS_FAILED;
 	}
 	NavFreeMem(FilesystemFilter->Reserved);
 	NavFreeMem(FilesystemFilter);
+	CloseHandle(FilesystemFilter->UnregisteredEventHandle);
 	return NAV_UNREGISTER_FS_FILTER_STATUS_SUCCESS;
 }
 

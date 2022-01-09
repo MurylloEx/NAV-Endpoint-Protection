@@ -19,49 +19,55 @@
     <Filter Include="Header Files\nav\base">
       <UniqueIdentifier>{85611597-c65b-44de-85d9-66b372c4bddc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\nav">
+      <UniqueIdentifier>{c6048961-2b57-41fb-b06f-41281ce26eda}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\nav\base">
+      <UniqueIdentifier>{ffadca4d-f93b-4aff-8248-512aa57584ac}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NAV Tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="nav\base\handles.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\memory.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\privileges.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\protection.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\service.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\syscall.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\winapi.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\minifilters.cpp">
-      <Filter>Header Files\nav\base</Filter>
+      <Filter>Source Files\nav\base</Filter>
     </ClCompile>
     <ClCompile Include="nav\base\hook.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\wmi.cpp">
-      <Filter>Header Files\nav\base</Filter>
-    </ClCompile>
-    <ClCompile Include="nav\base\network.cpp">
-      <Filter>Header Files\nav\base</Filter>
+      <Filter>Source Files\nav\base</Filter>
     </ClCompile>
     <ClCompile Include="nav\base\loader.cpp">
-      <Filter>Header Files\nav\base</Filter>
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\memory.cpp">
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\minifilters.cpp">
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\network.cpp">
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\privileges.cpp">
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\protection.cpp">
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\service.cpp">
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\syscall.cpp">
+      <Filter>Source Files\nav\base</Filter>
     </ClCompile>
     <ClCompile Include="nav\base\system.cpp">
-      <Filter>Header Files\nav\base</Filter>
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\winapi.cpp">
+      <Filter>Source Files\nav\base</Filter>
+    </ClCompile>
+    <ClCompile Include="nav\base\wmi.cpp">
+      <Filter>Source Files\nav\base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@ NAVSTATUS NAVAPI NavRetrieveTcpTable(PNAV_TCP_INFO TcpInfo)
 {
 	DWORD Status = NULL;
 	PVOID TcpTableBuffer = NULL;
-	DWORD TcpTableSize = 0;
+	DWORD TcpTableSize = sizeof(MIB_TCPTABLE_OWNER_PID);
 	
 	do {
 		Status = GetExtendedTcpTable(
@@ -24,7 +24,7 @@ NAVSTATUS NAVAPI NavRetrieveTcpTable(PNAV_TCP_INFO TcpInfo)
 
 	Status = NULL;
 	TcpTableBuffer = NULL;
-	TcpTableSize = 0;
+	TcpTableSize = sizeof(MIB_TCP6TABLE_OWNER_PID);
 
 	do {
 		Status = GetExtendedTcpTable(

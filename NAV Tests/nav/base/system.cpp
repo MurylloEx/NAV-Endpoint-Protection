@@ -4,7 +4,7 @@
 #include "memory.h"
 
 BOOL NAVAPI NavIsX64System() {
-	GetSystemWow64DirectoryW(NULL, 0);
+	UNREFERENCED_PARAMETER(GetSystemWow64DirectoryW(NULL, 0));
 	if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
 		return FALSE;
 	return TRUE;

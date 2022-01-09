@@ -70,7 +70,7 @@ typedef struct _SYSTEM_HANDLE_INFORMATION {
 	SYSTEM_HANDLE Handles[1];
 } SYSTEM_HANDLE_INFORMATION, *PSYSTEM_HANDLE_INFORMATION;
 
-typedef enum _POOL_TYPE {
+typedef enum class _POOL_TYPE {
 	NonPagedPool,
 	PagedPool,
 	NonPagedPoolMustSucceed,
@@ -118,7 +118,7 @@ typedef struct _SYSTEM_PROCESS_INFO {
 	HANDLE                  InheritedFromProcessId;
 } SYSTEM_PROCESS_INFO, *PSYSTEM_PROCESS_INFO;
 
-typedef enum _KEY_INFORMATION_CLASS {
+typedef enum class _KEY_INFORMATION_CLASS {
 	KeyBasicInformation,
 	KeyNodeInformation,
 	KeyFullInformation,
@@ -133,7 +133,10 @@ typedef enum _KEY_INFORMATION_CLASS {
 } KEY_INFORMATION_CLASS, *PKEY_INFORMATION_CLASS;
 
 /* NT Types Definitions */
-typedef LONG NTSTATUS, *PNTSTATUS;
+#ifndef _NTDEF_
+typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
+typedef NTSTATUS *PNTSTATUS;
+#endif
 
 /* NT API prototype functions */
 typedef NTSTATUS(NTAPI *PNtQuerySystemInformation)(

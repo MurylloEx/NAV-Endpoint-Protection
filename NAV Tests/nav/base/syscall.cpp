@@ -6,10 +6,12 @@ typedef struct _NAV_NAMED_PIPE_DATA_SHADOW {
 } NAV_NAMED_PIPE_DATA_SHADOW, *PNAV_NAMED_PIPE_DATA_SHADOW;
 
 typedef struct _NAV_NAMED_PIPE_SEMAPHORE {
-	HANDLE EventHandle;
 	DWORD Semaphore;
+	HANDLE EventHandle;
 	HANDLE ThreadHandle;
 	HANDLE PipeHandle;
+	HANDLE CancelledEventHandle;
+	BOOL IsCancelationPending;
 } NAV_NAMED_PIPE_SEMAPHORE, *PNAV_NAMED_PIPE_SEMAPHORE;
 
 DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
@@ -95,7 +97,8 @@ DWORD WINAPI NavPipeRoutineDispatcher(LPVOID ThreadParam)
 	return EXIT_SUCCESS;
 }
 
-DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) {
+DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) 
+{
 	PNAV_NAMED_PIPE_DATA PipeData = (PNAV_NAMED_PIPE_DATA)ThreadParam;
 	PNAV_NAMED_PIPE_SEMAPHORE Semaphore = (PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved;
 
@@ -103,7 +106,6 @@ DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) {
 		HANDLE PipeHandle = INVALID_HANDLE_VALUE;
 		BOOL IsConnected = FALSE;
 		DWORD ThreadId = 0;
-		HANDLE ThreadHandle = INVALID_HANDLE_VALUE;
 
 		PipeHandle = CreateNamedPipeW(PipeData->PipeName, PIPE_ACCESS_DUPLEX,
 			PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
@@ -117,25 +119,44 @@ DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) {
 		Semaphore->PipeHandle = PipeHandle;
 		IsConnected = ConnectNamedPipe(PipeHandle, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
 
+		#pragma warning(push)
+		#pragma warning(disable: 6001)
 		if (IsConnected) {
 			PNAV_NAMED_PIPE_DATA_SHADOW PipeParamsData = (PNAV_NAMED_PIPE_DATA_SHADOW)NavAllocMem(
 				sizeof(NAV_NAMED_PIPE_DATA_SHADOW));
+
 			if (PipeParamsData == NULL) {
 				break;
 			}
+
 			PipeParamsData->PipeData = PipeData;
 			PipeParamsData->PipeHandle = PipeHandle;
-			ThreadHandle = CreateThread(PipeData->ThreadSecurity, NULL,
+
+			HANDLE ThreadHandle = CreateThread(PipeData->ThreadSecurity, NULL,
 				NavPipeRoutineDispatcher, PipeParamsData, NULL, &ThreadId);
+
 			if (ThreadHandle == NULL) {
 				NavFreeMem(PipeParamsData);
 				break;
 			}
+			else {
+				CloseHandle(ThreadHandle);
+			}
+
 			ResetEvent(((PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved)->EventHandle);
-			CloseHandle(ThreadHandle);
 		}
 		else {
 			CloseHandle(PipeHandle);
+		}
+		#pragma warning(pop)
+
+		if ((WaitForSingleObject(Semaphore->EventHandle, INFINITE) == WAIT_OBJECT_0) && (Semaphore->IsCancelationPending == TRUE)) {
+			NavFreeMem(Semaphore);
+			NavFreeMem(PipeData);
+			DisconnectNamedPipe(Semaphore->PipeHandle);
+			CloseHandle(Semaphore->PipeHandle);
+			SetEvent(Semaphore->CancelledEventHandle);
+			return EXIT_SUCCESS;
 		}
 	}
 
@@ -144,13 +165,16 @@ DWORD WINAPI NavPipeThreadRoutine(LPVOID ThreadParam) {
 
 NAVSTATUS NAVAPI NavCreateNamedPipe(
 	IN PNAV_NAMED_PIPE_DATA PipeData,
-	OUT PDWORD ThreadId) {
+	OUT PDWORD ThreadId) 
+{
 	HANDLE ThreadHandle = CreateThread(PipeData->ThreadSecurity, NULL,
 		(LPTHREAD_START_ROUTINE)NavPipeThreadRoutine, (LPVOID)PipeData, NULL, ThreadId);
+
 	if (ThreadHandle != NULL) {
 		PNAV_NAMED_PIPE_SEMAPHORE Semaphore = 
 			(PNAV_NAMED_PIPE_SEMAPHORE)NavAllocMem(sizeof(NAV_NAMED_PIPE_SEMAPHORE));
 		Semaphore->EventHandle = CreateEventW(NULL, FALSE, TRUE, NULL);
+		Semaphore->CancelledEventHandle = CreateEventW(NULL, FALSE, FALSE, NULL);
 		Semaphore->ThreadHandle = ThreadHandle;
 		PipeData->Reserved = (LPVOID)Semaphore;
 		return NAV_CREATE_PIPE_STATUS_SUCCESS;
@@ -162,14 +186,9 @@ NAVSTATUS NAVAPI NavDeleteNamedPipe(
 	IN PNAV_NAMED_PIPE_DATA PipeData)
 {
 	PNAV_NAMED_PIPE_SEMAPHORE Semaphore = (PNAV_NAMED_PIPE_SEMAPHORE)PipeData->Reserved;
-	if (WaitForSingleObject(Semaphore->EventHandle, INFINITE) == WAIT_OBJECT_0) {
-		if (TerminateThread(Semaphore->ThreadHandle, EXIT_SUCCESS) != FALSE) {
-			NavFreeMem(Semaphore);
-			NavFreeMem(PipeData);
-			DisconnectNamedPipe(Semaphore->PipeHandle);
-			CloseHandle(Semaphore->PipeHandle);
-			return NAV_CLOSE_PIPE_STATUS_SUCCESS;
-		}
+	Semaphore->IsCancelationPending = TRUE;
+	if (WaitForSingleObject(Semaphore->CancelledEventHandle, INFINITE) == WAIT_OBJECT_0) {
+		return NAV_CLOSE_PIPE_STATUS_SUCCESS;
 	}
 	return NAV_CLOSE_PIPE_STATUS_FAILED;
 }
