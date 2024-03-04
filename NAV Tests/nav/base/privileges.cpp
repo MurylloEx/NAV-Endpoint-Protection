@@ -95,7 +95,7 @@ NAVSTATUS NAVAPI NavCheckPrivilegeToken(
 		return NAV_CHECK_PRIVILEGE_STATUS_UNKNOWN_BUFFER_SIZE;
 	}
 	
-	PTOKEN_PRIVILEGES PTokenPrivileges = (PTOKEN_PRIVILEGES)NavAllocMem(TokenBufferSize);
+	PTOKEN_PRIVILEGES PTokenPrivileges = (PTOKEN_PRIVILEGES)NavAllocate(TokenBufferSize);
 
 	Status = GetTokenInformation(TokenHandle, TOKEN_INFORMATION_CLASS::TokenPrivileges,
 		PTokenPrivileges, TokenBufferSize, &TokenBufferSize);
@@ -115,7 +115,7 @@ NAVSTATUS NAVAPI NavCheckPrivilegeToken(
 		}
 	}
 
-	NavFreeMem(PTokenPrivileges);
+	NavFree(PTokenPrivileges);
 	
 	return NAV_CHECK_PRIVILEGE_STATUS_SUCCESS;
 }

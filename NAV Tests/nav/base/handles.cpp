@@ -4,16 +4,16 @@ LPWSTR NAVAPI NavQueryProcessPathNameByHandle(
 	IN HANDLE ProcessHandle) 
 {
 	DWORD PathSize = MAX_PATH + 1;
-	LPWSTR PathBuffer = (LPWSTR)NavAllocMem(PathSize * sizeof(WCHAR));
+	LPWSTR PathBuffer = (LPWSTR)NavAllocate(PathSize * sizeof(WCHAR));
 	if (PathBuffer == NULL) {
-		NavFreeMem(PathBuffer);
+		NavFree(PathBuffer);
 		return FALSE;
 	}
 	BOOL Status = QueryFullProcessImageNameW(ProcessHandle, NULL, PathBuffer, &PathSize);
 	if (Status != FALSE) {
 		return PathBuffer;
 	}
-	NavFreeMem(PathBuffer);
+	NavFree(PathBuffer);
 	return NULL;
 }
 
@@ -33,7 +33,7 @@ LPWSTR NAVAPI NavQueryKeyNameByHandle(
 		NULL, NULL, &KeyInfoBufferSize);
 	
 	if (QueryStatus == STATUS_BUFFER_TOO_SMALL) {
-		KeyPathName = (LPWSTR)NavAllocMem(KeyInfoBufferSize);
+		KeyPathName = (LPWSTR)NavAllocate(KeyInfoBufferSize);
 		if (KeyPathName == FALSE) {
 			return FALSE;
 		}
@@ -52,19 +52,19 @@ LPWSTR NAVAPI NavQueryFileNameByHandle(
 	IN HANDLE FileHandle) 
 {
 	DWORD dwPathSize = (DWORD)0x10;
-	LPWSTR lpFileName = (LPWSTR)NavAllocMem((dwPathSize + 1) * sizeof(WCHAR));
+	LPWSTR lpFileName = (LPWSTR)NavAllocate((dwPathSize + 1) * sizeof(WCHAR));
 
 	ZeroMemory(lpFileName, (dwPathSize + 1) * sizeof(WCHAR));
 
 	if (FileHandle == INVALID_HANDLE_VALUE) {
-		NavFreeMem(lpFileName);
+		NavFree(lpFileName);
 		return FALSE;
 	}
 
 	DWORD Status = GetFinalPathNameByHandleW(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS);
 
 	if (Status == FALSE) {
-		NavFreeMem(lpFileName);
+		NavFree(lpFileName);
 		return FALSE;
 	}
 
@@ -79,7 +79,7 @@ LPWSTR NAVAPI NavQueryFileNameByHandle(
 		ZeroMemory(lpFileName, (dwPathSize + 1) * sizeof(WCHAR));
 
 		if (GetFinalPathNameByHandleW(FileHandle, lpFileName, dwPathSize, VOLUME_NAME_DOS) == FALSE) {
-			NavFreeMem(lpFileName);
+			NavFree(lpFileName);
 			return FALSE;
 		}
 		else {
@@ -105,11 +105,11 @@ BOOL NAVAPI NavQueryProcessHandles(
 	RtlZeroMemory((LPVOID)ProcessHandles, sizeof(NAV_PROCESS_HANDLES));
 
 	/*Alloc initial buffer for retrieve system handles*/
-	PSYSTEM_HANDLE_INFORMATION PtrHandleInformation = (PSYSTEM_HANDLE_INFORMATION)NavAllocMem(BufferSize);
+	PSYSTEM_HANDLE_INFORMATION PtrHandleInformation = (PSYSTEM_HANDLE_INFORMATION)NavAllocate(BufferSize);
 
 	/*Error while allocating memory*/
 	if (PtrHandleInformation == NULL) {
-		NavFreeMem(PtrHandleInformation);
+		NavFree(PtrHandleInformation);
 		return GetLastError();
 	}
 
@@ -119,7 +119,7 @@ BOOL NAVAPI NavQueryProcessHandles(
 
 	/*Error while opening the process*/
 	if (hProcess == NULL) {
-		NavFreeMem(PtrHandleInformation);
+		NavFree(PtrHandleInformation);
 		return GetLastError();
 	}
 
@@ -138,7 +138,7 @@ BOOL NAVAPI NavQueryProcessHandles(
 	/*Cannot retrieve Handle information of the target process*/
 	if (!NT_SUCCESS(Status)) {
 		CloseHandle(hProcess);
-		NavFreeMem(PtrHandleInformation);
+		NavFree(PtrHandleInformation);
 		return GetLastError();
 	}
 
@@ -160,13 +160,13 @@ BOOL NAVAPI NavQueryProcessHandles(
 		ULONG QueryBufferSize = 0x50;
 		ULONG RetriesCount = 0;
 		BOOL QueryStatus = FALSE;
-		POBJECT_TYPE_INFORMATION PtrObjectInformation = (POBJECT_TYPE_INFORMATION)NavAllocMem(QueryBufferSize);
+		POBJECT_TYPE_INFORMATION PtrObjectInformation = (POBJECT_TYPE_INFORMATION)NavAllocate(QueryBufferSize);
 
 		/*Error while allocating memory*/
 		if (PtrObjectInformation == NULL) {
 			CloseHandle(hProcess);
-			NavFreeMem(PtrObjectInformation);
-			NavFreeMem(PtrHandleInformation);
+			NavFree(PtrObjectInformation);
+			NavFree(PtrHandleInformation);
 			return GetLastError();
 		}
 
@@ -177,8 +177,8 @@ BOOL NAVAPI NavQueryProcessHandles(
 				/*Error while allocating memory*/
 				if (PtrObjectInformation == NULL) {
 					CloseHandle(hProcess);
-					NavFreeMem(PtrObjectInformation);
-					NavFreeMem(PtrHandleInformation);
+					NavFree(PtrObjectInformation);
+					NavFree(PtrHandleInformation);
 					return GetLastError();
 				}
 			}
@@ -189,7 +189,7 @@ BOOL NAVAPI NavQueryProcessHandles(
 		}
 
 		if (QueryStatus == TRUE) {
-			PNAV_PROCESS_HANDLES NavProcessHandlesNewEntry = (PNAV_PROCESS_HANDLES)NavAllocMem(sizeof(NAV_PROCESS_HANDLES));
+			PNAV_PROCESS_HANDLES NavProcessHandlesNewEntry = (PNAV_PROCESS_HANDLES)NavAllocate(sizeof(NAV_PROCESS_HANDLES));
 
 			NavProcessHandlesNewEntry->PObjectTypeInformation = PtrObjectInformation;
 			NavProcessHandlesNewEntry->Handle = &Handle;
@@ -200,7 +200,7 @@ BOOL NAVAPI NavQueryProcessHandles(
 
 			if (IsFirstNode == TRUE) {
 				*NavCurrentProcessHandlesEntry = *NavProcessHandlesNewEntry;
-				NavFreeMem(NavProcessHandlesNewEntry);
+				NavFree(NavProcessHandlesNewEntry);
 				IsFirstNode = FALSE;
 			}
 			else {
@@ -211,13 +211,13 @@ BOOL NAVAPI NavQueryProcessHandles(
 			}
 		}
 		else {
-			NavFreeMem(PtrObjectInformation);
+			NavFree(PtrObjectInformation);
 		}
 
 	}
 
 	CloseHandle(hProcess);
-	NavFreeMem(PtrHandleInformation);
+	NavFree(PtrHandleInformation);
 
 	return TRUE;
 }
@@ -241,9 +241,9 @@ BOOL NAVAPI NavFreeProcessHandles(
 	for (ULONG Idx = 0; Idx < NumOfStructElements; Idx++) {
 		LastStructHandles = TempStructHandles;
 		TempStructHandles = (PNAV_PROCESS_HANDLES)TempStructHandles->NextAddress;
-		NavFreeMem(LastStructHandles->PObjectTypeInformation);
+		NavFree(LastStructHandles->PObjectTypeInformation);
 		ZeroMemory(LastStructHandles, sizeof(NAV_PROCESS_HANDLES));
-		if ((NavFreeMem(LastStructHandles) != TRUE) && (Status == TRUE)) {
+		if ((NavFree(LastStructHandles) != TRUE) && (Status == TRUE)) {
 			Status = FALSE;
 		}
 	}
@@ -268,7 +268,7 @@ BOOL NAVAPI NavQueryFilesByProcessHandles(
 			Status = TRUE;
 			IsFirstNode = FALSE;
 			PNAV_PROCESS_OPEN_FILES NavNewOpenFilesStruct =
-				(PNAV_PROCESS_OPEN_FILES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_FILES));
+				(PNAV_PROCESS_OPEN_FILES)NavAllocate(sizeof(NAV_PROCESS_OPEN_FILES));
 			NavNewOpenFilesStruct->FilePathName = lpFileName;
 			ProcessFiles->NextAddress = (LPVOID)NavNewOpenFilesStruct;
 		}
@@ -291,7 +291,7 @@ BOOL NAVAPI NavQueryFilesByProcessHandles(
 
 		PNAV_PROCESS_OPEN_FILES TempOpenFilesPointer = ProcessFiles;
 		PNAV_PROCESS_OPEN_FILES NavNewOpenFilesStruct =
-			(PNAV_PROCESS_OPEN_FILES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_FILES));
+			(PNAV_PROCESS_OPEN_FILES)NavAllocate(sizeof(NAV_PROCESS_OPEN_FILES));
 
 		NavNewOpenFilesStruct->FilePathName = lpFileName;
 		NavNewOpenFilesStruct->NextAddress = NULL;
@@ -299,7 +299,7 @@ BOOL NAVAPI NavQueryFilesByProcessHandles(
 		if (IsFirstNode == TRUE) {
 			IsFirstNode = FALSE;
 			*TempOpenFilesPointer = *NavNewOpenFilesStruct;
-			NavFreeMem(NavNewOpenFilesStruct);
+			NavFree(NavNewOpenFilesStruct);
 		}
 		else {
 			while (TempOpenFilesPointer->NextAddress != NULL) {
@@ -337,11 +337,11 @@ BOOL NAVAPI NavFreeOpenFiles(
 		LastFilesStruct = TempFilesStruct;
 		TempFilesStruct = (PNAV_PROCESS_OPEN_FILES)TempFilesStruct->NextAddress;
 
-		NavFreeMem((LPVOID)(LastFilesStruct->FilePathName));
+		NavFree((LPVOID)(LastFilesStruct->FilePathName));
 
 		ZeroMemory(LastFilesStruct, sizeof(NAV_PROCESS_OPEN_FILES));
 
-		if ((NavFreeMem(LastFilesStruct) != TRUE) && (Status == TRUE)) {
+		if ((NavFree(LastFilesStruct) != TRUE) && (Status == TRUE)) {
 			Status = FALSE;
 		}
 	}
@@ -365,7 +365,7 @@ BOOL NAVAPI NavQueryKeysByProcessHandles(
 			Status = TRUE;
 			IsFirstNode = FALSE;
 			PNAV_PROCESS_OPEN_KEYS NavNewOpenKeysStruct =
-				(PNAV_PROCESS_OPEN_KEYS)NavAllocMem(sizeof(NAV_PROCESS_OPEN_KEYS));
+				(PNAV_PROCESS_OPEN_KEYS)NavAllocate(sizeof(NAV_PROCESS_OPEN_KEYS));
 			NavNewOpenKeysStruct->KeyPathName = KeyPathName;
 			ProcessKeys->NextAddress = (LPVOID)NavNewOpenKeysStruct;
 		}
@@ -388,7 +388,7 @@ BOOL NAVAPI NavQueryKeysByProcessHandles(
 
 		PNAV_PROCESS_OPEN_KEYS TempOpenKeysPointer = ProcessKeys;
 		PNAV_PROCESS_OPEN_KEYS NavNewOpenKeysStruct =
-			(PNAV_PROCESS_OPEN_KEYS)NavAllocMem(sizeof(NAV_PROCESS_OPEN_KEYS));
+			(PNAV_PROCESS_OPEN_KEYS)NavAllocate(sizeof(NAV_PROCESS_OPEN_KEYS));
 
 		NavNewOpenKeysStruct->KeyPathName = KeyPathName;
 		NavNewOpenKeysStruct->NextAddress = NULL;
@@ -396,7 +396,7 @@ BOOL NAVAPI NavQueryKeysByProcessHandles(
 		if (IsFirstNode == TRUE) {
 			IsFirstNode = FALSE;
 			*TempOpenKeysPointer = *NavNewOpenKeysStruct;
-			NavFreeMem(NavNewOpenKeysStruct);
+			NavFree(NavNewOpenKeysStruct);
 		}
 		else {
 			while (TempOpenKeysPointer->NextAddress != NULL) {
@@ -434,11 +434,11 @@ BOOL NAVAPI NavFreeOpenKeys(
 		LastKeysStruct = TempKeysStruct;
 		TempKeysStruct = (PNAV_PROCESS_OPEN_KEYS)TempKeysStruct->NextAddress;
 
-		NavFreeMem(QUERY_KEY_PATH_TO_BASE(LastKeysStruct->KeyPathName));
+		NavFree(QUERY_KEY_PATH_TO_BASE(LastKeysStruct->KeyPathName));
 
 		ZeroMemory(LastKeysStruct, sizeof(NAV_PROCESS_OPEN_KEYS));
 
-		if ((NavFreeMem(LastKeysStruct) != TRUE) && (Status == TRUE)) {
+		if ((NavFree(LastKeysStruct) != TRUE) && (Status == TRUE)) {
 			Status = FALSE;
 		}
 	}
@@ -462,7 +462,7 @@ BOOL NAVAPI NavQueryProcessesByProcessHandles(
 			Status = TRUE;
 			IsFirstNode = FALSE;
 			PNAV_PROCESS_OPEN_PROCESSES NavNewOpenProcessesStruct =
-				(PNAV_PROCESS_OPEN_PROCESSES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_PROCESSES));
+				(PNAV_PROCESS_OPEN_PROCESSES)NavAllocate(sizeof(NAV_PROCESS_OPEN_PROCESSES));
 			NavNewOpenProcessesStruct->FilePathName = FilePathName;
 			ProcessBuffer->NextAddress = (LPVOID)NavNewOpenProcessesStruct;
 		}
@@ -486,7 +486,7 @@ BOOL NAVAPI NavQueryProcessesByProcessHandles(
 
 		PNAV_PROCESS_OPEN_PROCESSES TempOpenProcessesPointer = ProcessBuffer;
 		PNAV_PROCESS_OPEN_PROCESSES NavNewOpenProcessesStruct =
-			(PNAV_PROCESS_OPEN_PROCESSES)NavAllocMem(sizeof(NAV_PROCESS_OPEN_PROCESSES));
+			(PNAV_PROCESS_OPEN_PROCESSES)NavAllocate(sizeof(NAV_PROCESS_OPEN_PROCESSES));
 
 		NavNewOpenProcessesStruct->FilePathName = FilePathName;
 		NavNewOpenProcessesStruct->ProcessId = ProcessId;
@@ -495,7 +495,7 @@ BOOL NAVAPI NavQueryProcessesByProcessHandles(
 		if (IsFirstNode == TRUE) {
 			IsFirstNode = FALSE;
 			*TempOpenProcessesPointer = *NavNewOpenProcessesStruct;
-			NavFreeMem(NavNewOpenProcessesStruct);
+			NavFree(NavNewOpenProcessesStruct);
 		}
 		else {
 			while (TempOpenProcessesPointer->NextAddress != NULL) {
@@ -532,11 +532,11 @@ BOOL NAVAPI NavFreeOpenProcesses(
 		LastProcessesStruct = TempProcessesStruct;
 		TempProcessesStruct = (PNAV_PROCESS_OPEN_PROCESSES)TempProcessesStruct->NextAddress;
 
-		NavFreeMem((LPVOID)(LastProcessesStruct->FilePathName));
+		NavFree((LPVOID)(LastProcessesStruct->FilePathName));
 
 		ZeroMemory(LastProcessesStruct, sizeof(NAV_PROCESS_OPEN_PROCESSES));
 
-		if ((NavFreeMem(LastProcessesStruct) != TRUE) && (Status == TRUE)) {
+		if ((NavFree(LastProcessesStruct) != TRUE) && (Status == TRUE)) {
 			Status = FALSE;
 		}
 	}

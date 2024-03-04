@@ -8,7 +8,7 @@ NAVSTATUS NAVAPI NavCreateWellKnownSid(
 	OUT DWORD* SidSizePtr) 
 {
 	DWORD SidSize = sizeof(SID);
-	PSID PSid = (PSID)NavAllocMem(SidSize);
+	PSID PSid = (PSID)NavAllocate(SidSize);
 	if (PSid == NULL) {
 		return NAV_CREATE_SID_STATUS_MEMORY_ALLOCATION_FAILED;
 	}
@@ -20,7 +20,7 @@ NAVSTATUS NAVAPI NavCreateWellKnownSid(
 	}
 	if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
 		if (CreateWellKnownSid(SidType, DomainSid, PSid, &SidSize) == FALSE) {
-			NavFreeMem(PSid);
+			NavFree(PSid);
 			return NAV_CREATE_SID_STATUS_CREATION_FAILED;
 		}
 	}
@@ -32,7 +32,7 @@ NAVSTATUS NAVAPI NavCreateWellKnownSid(
 NAVSTATUS NAVAPI NavFreeWellKnownSid(
 	IN PSID* SidPtr)
 {
-	if (NavFreeMem((LPVOID)(*SidPtr)) == FALSE) {
+	if (NavFree((LPVOID)(*SidPtr)) == FALSE) {
 		return NAV_FREE_SID_STATUS_FAILED;
 	}
 	return NAV_FREE_SID_STATUS_SUCCESS;
@@ -42,7 +42,7 @@ NAVSTATUS NAVAPI NavKeMakeAbDescriptor(
 	IN PSECURITY_DESCRIPTOR* RelativeSecurityDescriptor,
 	OUT LPNAV_SECURITY_DESCRIPTOR* NavSecurityDescriptor)
 {
-	*NavSecurityDescriptor = (LPNAV_SECURITY_DESCRIPTOR)NavAllocMem(sizeof(NAV_SECURITY_DESCRIPTOR));
+	*NavSecurityDescriptor = (LPNAV_SECURITY_DESCRIPTOR)NavAllocate(sizeof(NAV_SECURITY_DESCRIPTOR));
 
 	if (*NavSecurityDescriptor == NULL) {
 		return NAV_MAKE_SD_STATUS_MEMORY_ALLOCATION_FAILED;
@@ -60,20 +60,20 @@ NAVSTATUS NAVAPI NavKeMakeAbDescriptor(
 	*(PDWORD)OwnerSIDSize			= sizeof(SID);
 	*(PDWORD)PrimaryGroupSIDSize	= sizeof(SID);
 
-	PVOID AbSecurityDescriptor	= (PVOID)NavAllocMem(*(PDWORD)AbSDSize);
-	PACL Dacl					= (PACL)NavAllocMem(*(PDWORD)DaclSize);
-	PACL Sacl					= (PACL)NavAllocMem(*(PDWORD)SaclSize);
-	PSID OwnerSID				= (PSID)NavAllocMem(*(PDWORD)OwnerSIDSize);
-	PSID PrimaryGroupSID		= (PSID)NavAllocMem(*(PDWORD)PrimaryGroupSIDSize);
+	PVOID AbSecurityDescriptor	= (PVOID)NavAllocate(*(PDWORD)AbSDSize);
+	PACL Dacl					= (PACL)NavAllocate(*(PDWORD)DaclSize);
+	PACL Sacl					= (PACL)NavAllocate(*(PDWORD)SaclSize);
+	PSID OwnerSID				= (PSID)NavAllocate(*(PDWORD)OwnerSIDSize);
+	PSID PrimaryGroupSID		= (PSID)NavAllocate(*(PDWORD)PrimaryGroupSIDSize);
 
 	if (!AbSecurityDescriptor || !Dacl || !Sacl || !OwnerSID || !PrimaryGroupSID) {
 		/* Free all allocated memory blocks */
-		NavFreeMem(*NavSecurityDescriptor);
-		NavFreeMem(AbSecurityDescriptor);
-		NavFreeMem(Dacl);
-		NavFreeMem(Sacl);
-		NavFreeMem(OwnerSID);
-		NavFreeMem(PrimaryGroupSID);
+		NavFree(*NavSecurityDescriptor);
+		NavFree(AbSecurityDescriptor);
+		NavFree(Dacl);
+		NavFree(Sacl);
+		NavFree(OwnerSID);
+		NavFree(PrimaryGroupSID);
 		return NAV_MAKE_SD_STATUS_MEMORY_ALLOCATION_FAILED;
 	}
 
@@ -91,12 +91,12 @@ NAVSTATUS NAVAPI NavKeMakeAbDescriptor(
 
 		if (!AbSecurityDescriptor || !Dacl || !Sacl || !OwnerSID || !PrimaryGroupSID) {
 			/* Free all allocated memory blocks */
-			NavFreeMem(*NavSecurityDescriptor);
-			NavFreeMem(AbSecurityDescriptor);
-			NavFreeMem(Dacl);
-			NavFreeMem(Sacl);
-			NavFreeMem(OwnerSID);
-			NavFreeMem(PrimaryGroupSID);
+			NavFree(*NavSecurityDescriptor);
+			NavFree(AbSecurityDescriptor);
+			NavFree(Dacl);
+			NavFree(Sacl);
+			NavFree(OwnerSID);
+			NavFree(PrimaryGroupSID);
 			return NAV_MAKE_SD_STATUS_MEMORY_ALLOCATION_FAILED;
 		}
 
@@ -106,12 +106,12 @@ NAVSTATUS NAVAPI NavKeMakeAbDescriptor(
 
 		if (ConversionStatus == FALSE) {
 			/* Free all allocated memory blocks */
-			NavFreeMem(*NavSecurityDescriptor);
-			NavFreeMem(AbSecurityDescriptor);
-			NavFreeMem(Dacl);
-			NavFreeMem(Sacl);
-			NavFreeMem(OwnerSID);
-			NavFreeMem(PrimaryGroupSID);
+			NavFree(*NavSecurityDescriptor);
+			NavFree(AbSecurityDescriptor);
+			NavFree(Dacl);
+			NavFree(Sacl);
+			NavFree(OwnerSID);
+			NavFree(PrimaryGroupSID);
 			return NAV_MAKE_SD_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 		}
 	}
@@ -131,12 +131,12 @@ NAVSTATUS NAVAPI NavKeFreeAbDescriptor(
 	LPNAV_SECURITY_DESCRIPTOR RefNavSecurityDescriptor = *NavSecurityDescriptor;
 
 	/* Release all memory used by NAV Security Descriptor */
-	NavFreeMem(RefNavSecurityDescriptor->AbSecurityDescriptor);
-	NavFreeMem(RefNavSecurityDescriptor->DiscretionaryACL);
-	NavFreeMem(RefNavSecurityDescriptor->SystemACL);
-	NavFreeMem(RefNavSecurityDescriptor->OwnerSID);
-	NavFreeMem(RefNavSecurityDescriptor->PrimaryGroupSID);
-	NavFreeMem(RefNavSecurityDescriptor);
+	NavFree(RefNavSecurityDescriptor->AbSecurityDescriptor);
+	NavFree(RefNavSecurityDescriptor->DiscretionaryACL);
+	NavFree(RefNavSecurityDescriptor->SystemACL);
+	NavFree(RefNavSecurityDescriptor->OwnerSID);
+	NavFree(RefNavSecurityDescriptor->PrimaryGroupSID);
+	NavFree(RefNavSecurityDescriptor);
 
 	return NAV_FREE_SD_STATUS_SUCCESS;
 }
@@ -157,14 +157,14 @@ NAVSTATUS NAVAPI NavKeSetProcessAce(
 		return NAV_PROCESS_ACE_STATUS_UNKNOWN_BUFFER_SIZE;
 	}
 
-	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocMem(BufferSize);
+	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocate(BufferSize);
 
 	if (RelSecurityDescriptor == FALSE) {
 		return NAV_PROCESS_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
 	}
 
 	if (GetKernelObjectSecurity(ProcessHandle, DACL_SECURITY_INFORMATION, RelSecurityDescriptor, BufferSize, &BufferSize) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		return NAV_PROCESS_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 	}
 
@@ -195,26 +195,26 @@ NAVSTATUS NAVAPI NavKeSetProcessAce(
 	BOOL IsDaclDefault = FALSE;
 
 	if (GetSecurityDescriptorDacl(RelSecurityDescriptor, &IsDaclPresent, &OldAcl, &IsDaclDefault) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		return NAV_PROCESS_ACE_STATUS_RETRIEVE_DACL_FAILED;
 	}
 
 	if (SetEntriesInAclW(1, &ExplicitAccess, OldAcl, &NewAcl) != ERROR_SUCCESS) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		return NAV_PROCESS_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetSecurityDescriptorDacl(NavSecurityDescriptor->AbSecurityDescriptor, TRUE, NewAcl, TRUE) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		return NAV_PROCESS_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetKernelObjectSecurity(ProcessHandle, DACL_SECURITY_INFORMATION, NavSecurityDescriptor->AbSecurityDescriptor) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		return NAV_PROCESS_ACE_STATUS_DESCRIPTOR_CHANGE_FAILED;
 	}
 
-	NavFreeMem(RelSecurityDescriptor);
+	NavFree(RelSecurityDescriptor);
 	return NAV_PROCESS_ACE_STATUS_SUCCESS;
 }
 
@@ -258,14 +258,14 @@ NAVSTATUS NAVAPI NavKeSetFileAce(
 		return NAV_FILE_ACE_STATUS_UNKNOWN_BUFFER_SIZE;
 	}
 
-	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocMem(BufferSize);
+	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocate(BufferSize);
 
 	if (RelSecurityDescriptor == FALSE) {
 		return NAV_FILE_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
 	}
 
 	if (GetFileSecurityW(FileName, DACL_SECURITY_INFORMATION, RelSecurityDescriptor, BufferSize, &BufferSize) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		return NAV_FILE_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 	}
 
@@ -296,30 +296,30 @@ NAVSTATUS NAVAPI NavKeSetFileAce(
 	BOOL IsDaclDefault = FALSE;
 
 	if (GetSecurityDescriptorDacl(RelSecurityDescriptor, &IsDaclPresent, &OldAcl, &IsDaclDefault) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_FILE_ACE_STATUS_RETRIEVE_DACL_FAILED;
 	}
 
 	if (SetEntriesInAclW(1, &ExplicitAccess, OldAcl, &NewAcl) != ERROR_SUCCESS) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_FILE_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetSecurityDescriptorDacl(NavSecurityDescriptor->AbSecurityDescriptor, TRUE, NewAcl, TRUE) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_FILE_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetFileSecurityW(FileName, DACL_SECURITY_INFORMATION, NavSecurityDescriptor->AbSecurityDescriptor) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_FILE_ACE_STATUS_DESCRIPTOR_CHANGE_FAILED;
 	}
 
-	NavFreeMem(RelSecurityDescriptor);
+	NavFree(RelSecurityDescriptor);
 	NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 	return NAV_FILE_ACE_STATUS_SUCCESS;
 }
@@ -338,14 +338,14 @@ NAVSTATUS NAVAPI NavKeSetKeyAce(
 		return NAV_KEY_ACE_STATUS_UNKNOWN_BUFFER_SIZE;
 	}
 
-	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocMem(BufferSize);
+	PSECURITY_DESCRIPTOR RelSecurityDescriptor = (PSECURITY_DESCRIPTOR)NavAllocate(BufferSize);
 
 	if (RelSecurityDescriptor == FALSE) {
 		return NAV_KEY_ACE_STATUS_MEMORY_ALLOCATION_FAILED;
 	}
 
 	if (RegGetKeySecurity(KeyHandle, DACL_SECURITY_INFORMATION, RelSecurityDescriptor, &BufferSize) != ERROR_SUCCESS) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		return NAV_KEY_ACE_STATUS_UNKNOWN_SECURITY_DESCRIPTOR;
 	}
 
@@ -376,30 +376,30 @@ NAVSTATUS NAVAPI NavKeSetKeyAce(
 	BOOL IsDaclDefault = FALSE;
 
 	if (GetSecurityDescriptorDacl(RelSecurityDescriptor, &IsDaclPresent, &OldAcl, &IsDaclDefault) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_KEY_ACE_STATUS_RETRIEVE_DACL_FAILED;
 	}
 
 	if (SetEntriesInAclW(1, &ExplicitAccess, OldAcl, &NewAcl) != ERROR_SUCCESS) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_KEY_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (SetSecurityDescriptorDacl(NavSecurityDescriptor->AbSecurityDescriptor, TRUE, NewAcl, TRUE) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_KEY_ACE_STATUS_DACL_CHANGE_FAILED;
 	}
 
 	if (RegSetKeySecurity(KeyHandle, DACL_SECURITY_INFORMATION, NavSecurityDescriptor->AbSecurityDescriptor) == FALSE) {
-		NavFreeMem(RelSecurityDescriptor);
+		NavFree(RelSecurityDescriptor);
 		NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 		return NAV_KEY_ACE_STATUS_DESCRIPTOR_CHANGE_FAILED;
 	}
 
-	NavFreeMem(RelSecurityDescriptor);
+	NavFree(RelSecurityDescriptor);
 	NavKeFreeAbDescriptor(&NavSecurityDescriptor);
 	return NAV_KEY_ACE_STATUS_SUCCESS;
 }

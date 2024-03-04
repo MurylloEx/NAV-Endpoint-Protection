@@ -118,7 +118,7 @@ NAVSTATUS NAVAPI NavAllocRemoteLoaderX64(
 	*(DWORD64*)((DWORD64)Shellcode + 65) = (DWORD64)PModuleFileName;
 	*(DWORD64*)((DWORD64)Shellcode + 100) = (DWORD64)POriginalRip;
 
-	*BufferAddress = NavAllocMem(sizeof(Shellcode));
+	*BufferAddress = NavAllocate(sizeof(Shellcode));
 	*BufferSize = sizeof(Shellcode);
 
 	if (*BufferAddress == NULL)
@@ -246,7 +246,7 @@ NAVSTATUS NAVAPI NavAllocRemoteLoaderX32(
 	*(DWORD32*)((ULONG_PTR)Shellcode + 34) = (DWORD32)PModuleFileName;
 	*(DWORD32*)((ULONG_PTR)Shellcode + 51) = (DWORD32)POriginalEip;
 
-	*BufferAddress = NavAllocMem(sizeof(Shellcode));
+	*BufferAddress = NavAllocate(sizeof(Shellcode));
 
 	if (*BufferAddress == NULL)
 		return FALSE;
@@ -264,7 +264,7 @@ NAVSTATUS NAVAPI NavGetModuleExportDirectory(
 	IN IMAGE_DOS_HEADER DosHeader,
 	IN IMAGE_NT_HEADERS NtHeaders)
 {
-	BYTE* AllocatedPEHeader = (BYTE*)NavAllocMem(1000 * sizeof(UCHAR));
+	BYTE* AllocatedPEHeader = (BYTE*)NavAllocate(1000 * sizeof(UCHAR));
 	PIMAGE_SECTION_HEADER ImageSectionHeaderAddress;
 	DWORD EATAddress;
 
@@ -286,7 +286,7 @@ NAVSTATUS NAVAPI NavGetModuleExportDirectory(
 			if (!ReadProcessMemory(ProcessHandle, (LPVOID)(DWORD_PTR)ImageSectionHeaderAddress->VirtualAddress, ExportDirectory, sizeof(IMAGE_EXPORT_DIRECTORY), NULL))
 				continue;
 
-			NavFreeMem(AllocatedPEHeader);
+			NavFree(AllocatedPEHeader);
 			return TRUE;
 		}
 	}
@@ -298,7 +298,7 @@ NAVSTATUS NAVAPI NavGetModuleExportDirectory(
 	if (!ReadProcessMemory(ProcessHandle, (LPVOID)((DWORD_PTR)ModuleHandle + EATAddress), ExportDirectory, sizeof(IMAGE_EXPORT_DIRECTORY), NULL))
 		return FALSE;
 
-	NavFreeMem(AllocatedPEHeader);
+	NavFree(AllocatedPEHeader);
 	return TRUE;
 }
 
@@ -377,31 +377,31 @@ LPVOID NAVAPI NavGetProcAddress(
 		return NULL;
 
 	// Allocate room for all the function information
-	AddressOfFunctions = (DWORD*)NavAllocMem(EATDirectory.NumberOfFunctions * sizeof(DWORD));
-	AddressOfNames = (DWORD*)NavAllocMem(EATDirectory.NumberOfNames * sizeof(DWORD));
-	AddressOfOrdinals = (WORD*)NavAllocMem(EATDirectory.NumberOfNames * sizeof(WORD));
+	AddressOfFunctions = (DWORD*)NavAllocate(EATDirectory.NumberOfFunctions * sizeof(DWORD));
+	AddressOfNames = (DWORD*)NavAllocate(EATDirectory.NumberOfNames * sizeof(DWORD));
+	AddressOfOrdinals = (WORD*)NavAllocate(EATDirectory.NumberOfNames * sizeof(WORD));
 
 	// Read function address locations
 	if (!ReadProcessMemory(ProcessHandle, (LPVOID)((DWORD_PTR)RemoteModuleHandle + (DWORD_PTR)EATDirectory.AddressOfFunctions), AddressOfFunctions, EATDirectory.NumberOfFunctions * sizeof(DWORD), NULL)) {
-		NavFreeMem(AddressOfFunctions);
-		NavFreeMem(AddressOfNames);
-		NavFreeMem(AddressOfOrdinals);
+		NavFree(AddressOfFunctions);
+		NavFree(AddressOfNames);
+		NavFree(AddressOfOrdinals);
 		return NULL;
 	}
 
 	// Read function name locations
 	if (!ReadProcessMemory(ProcessHandle, (LPVOID)((DWORD_PTR)RemoteModuleHandle + (DWORD_PTR)EATDirectory.AddressOfNames), AddressOfNames, EATDirectory.NumberOfNames * sizeof(DWORD), NULL)) {
-		NavFreeMem(AddressOfFunctions);
-		NavFreeMem(AddressOfNames);
-		NavFreeMem(AddressOfOrdinals);
+		NavFree(AddressOfFunctions);
+		NavFree(AddressOfNames);
+		NavFree(AddressOfOrdinals);
 		return NULL;
 	}
 
 	// Read function name ordinal locations
 	if (!ReadProcessMemory(ProcessHandle, (LPVOID)((DWORD_PTR)RemoteModuleHandle + (DWORD_PTR)EATDirectory.AddressOfNameOrdinals), AddressOfOrdinals, EATDirectory.NumberOfNames * sizeof(WORD), NULL)) {
-		NavFreeMem(AddressOfFunctions);
-		NavFreeMem(AddressOfNames);
-		NavFreeMem(AddressOfOrdinals);
+		NavFree(AddressOfFunctions);
+		NavFree(AddressOfNames);
+		NavFree(AddressOfOrdinals);
 		return NULL;
 	}
 
@@ -446,9 +446,9 @@ LPVOID NAVAPI NavGetProcAddress(
 
 			strcat_s(ModuleName, 256, ".dll");
 
-			NavFreeMem(AddressOfFunctions);
-			NavFreeMem(AddressOfNames);
-			NavFreeMem(AddressOfOrdinals);
+			NavFree(AddressOfFunctions);
+			NavFree(AddressOfNames);
+			NavFree(AddressOfOrdinals);
 
 			return NavGetProcAddress(ProcessHandle, ModuleName, RedirectedName);
 		}
@@ -466,9 +466,9 @@ LPVOID NAVAPI NavGetProcAddress(
 
 			ZeroMemory(&RedirectedFunctionName, 256);
 
-			NavFreeMem(AddressOfFunctions);
-			NavFreeMem(AddressOfNames);
-			NavFreeMem(AddressOfOrdinals);
+			NavFree(AddressOfFunctions);
+			NavFree(AddressOfNames);
+			NavFree(AddressOfOrdinals);
 
 			if (!ReadProcessMemory(ProcessHandle, (LPVOID)AddressOfRedirectedName, RedirectedFunctionName, 256, NULL))
 				return NULL;
@@ -477,17 +477,17 @@ LPVOID NAVAPI NavGetProcAddress(
 		}
 		// Otherwise return the address
 		else {
-			NavFreeMem(AddressOfFunctions);
-			NavFreeMem(AddressOfNames);
-			NavFreeMem(AddressOfOrdinals);
+			NavFree(AddressOfFunctions);
+			NavFree(AddressOfNames);
+			NavFree(AddressOfOrdinals);
 
 			return (LPVOID)AddressOfFunction;
 		}
 	}
 
-	NavFreeMem(AddressOfFunctions);
-	NavFreeMem(AddressOfNames);
-	NavFreeMem(AddressOfOrdinals);
+	NavFree(AddressOfFunctions);
+	NavFree(AddressOfNames);
+	NavFree(AddressOfOrdinals);
 
 	return NULL;
 }

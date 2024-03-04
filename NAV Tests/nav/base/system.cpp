@@ -41,7 +41,7 @@ NAVSTATUS NAVAPI NavEnumProcessThreads(
 	if (Snapshot == INVALID_HANDLE_VALUE)
 		return NAV_ENUM_PROCESS_THREADS_STATUS_FAILED;
 
-	*ThreadInformation = (PNAV_THREAD_INFORMATION)NavAllocMem(sizeof(NAV_THREAD_INFORMATION));
+	*ThreadInformation = (PNAV_THREAD_INFORMATION)NavAllocate(sizeof(NAV_THREAD_INFORMATION));
 	*NumberOfThreads = 0;
 
 	PNAV_THREAD_INFORMATION CurrentThread = *ThreadInformation;
@@ -59,7 +59,7 @@ NAVSTATUS NAVAPI NavEnumProcessThreads(
 					}
 					else {
 						PNAV_THREAD_INFORMATION NextThread =
-							(PNAV_THREAD_INFORMATION)NavAllocMem(sizeof(NAV_THREAD_INFORMATION));
+							(PNAV_THREAD_INFORMATION)NavAllocate(sizeof(NAV_THREAD_INFORMATION));
 
 						NextThread->ProcessId = ThreadEntry.th32OwnerProcessID;
 						NextThread->ThreadId = ThreadEntry.th32ThreadID;
@@ -87,11 +87,11 @@ NAVSTATUS NAVAPI NavReleaseEnumProcessThreads(
 			break;
 		}
 		if (NextThread->NextOffset == NULL) {
-			NavFreeMem(NextThread);
+			NavFree(NextThread);
 			break;
 		}
 		LPVOID NextOffset = NextThread->NextOffset;
-		NavFreeMem(NextThread);
+		NavFree(NextThread);
 		NextThread = (PNAV_THREAD_INFORMATION)NextOffset;
 	}
 	return NAV_RELEASE_PROCESS_ENUM_THREADS_STATUS_SUCCESS;

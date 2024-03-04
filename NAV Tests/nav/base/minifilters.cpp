@@ -49,7 +49,7 @@ DWORD WINAPI NavFileSystemFilterThread(LPVOID Params) {
 		return EXIT_FAILURE;
 	}
 
-	LPVOID Buffer = NavAllocMem(FsFilter->BufferSize);
+	LPVOID Buffer = NavAllocate(FsFilter->BufferSize);
 
 	if (Buffer == NULL) {
 		FsFilter->Reserved = NULL;
@@ -96,7 +96,7 @@ DWORD WINAPI NavFileSystemFilterThread(LPVOID Params) {
 		ResetEvent(Overlapped.hEvent);
 
 		if (FsFilter->IsRegistered == FALSE) {
-			NavFreeMem(Buffer);
+			NavFree(Buffer);
 			CloseHandle(Overlapped.hEvent);
 			SetEvent(FsFilter->UnregisteredEventHandle);
 			return EXIT_SUCCESS;
@@ -164,7 +164,7 @@ NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
 	IN PNAV_FILESYSTEM_FILTER_CALLBACK FilterCallback,
 	OUT PNAV_FILESYSTEM_FILTER* FilesystemFilter)
 {
-	PNAV_FILESYSTEM_FILTER FsFilter = (PNAV_FILESYSTEM_FILTER)NavAllocMem(sizeof(NAV_FILESYSTEM_FILTER));
+	PNAV_FILESYSTEM_FILTER FsFilter = (PNAV_FILESYSTEM_FILTER)NavAllocate(sizeof(NAV_FILESYSTEM_FILTER));
 
 	if (FsFilter == NULL) {
 		return NAV_REGISTER_FS_FILTER_STATUS_FAILED;
@@ -187,7 +187,7 @@ NAVSTATUS NAVAPI NavRegisterFileSystemFilter(
 		FsFilter, NULL, &FsFilter->ThreadId);
 
 	if (FsFilter->ThreadHandle == NULL) {
-		NavFreeMem(FsFilter);
+		NavFree(FsFilter);
 		if (FsFilter->UnregisteredEventHandle != NULL)
 			CloseHandle(FsFilter->UnregisteredEventHandle);
 		return NAV_REGISTER_FS_FILTER_STATUS_FAILED;
@@ -206,8 +206,8 @@ NAVSTATUS NAVAPI NavUnregisterFileSystemFilter(
 		CloseHandle(FilesystemFilter->UnregisteredEventHandle);
 		return NAV_UNREGISTER_FS_FILTER_STATUS_FAILED;
 	}
-	NavFreeMem(FilesystemFilter->Reserved);
-	NavFreeMem(FilesystemFilter);
+	NavFree(FilesystemFilter->Reserved);
+	NavFree(FilesystemFilter);
 	CloseHandle(FilesystemFilter->UnregisteredEventHandle);
 	return NAV_UNREGISTER_FS_FILTER_STATUS_SUCCESS;
 }
@@ -246,7 +246,7 @@ HRESULT STDMETHODCALLTYPE NavProcessFilterCallback(
 		}
 		
 		PNAV_PROCESS_FILTER PsFilter = (PNAV_PROCESS_FILTER)pCNavEvSink->GetParameters();
-		PNAV_PROCESS_DATA PsData = (PNAV_PROCESS_DATA)NavAllocMem(sizeof(NAV_PROCESS_DATA));
+		PNAV_PROCESS_DATA PsData = (PNAV_PROCESS_DATA)NavAllocate(sizeof(NAV_PROCESS_DATA));
 
 		PsData->ProcessId = ProcessId;
 		PsData->ParentProcessId = ParentProcessId;
@@ -255,7 +255,7 @@ HRESULT STDMETHODCALLTYPE NavProcessFilterCallback(
 
 		PsFilter->FilterCallback(*PsData, (NAV_PROCESS_NOTIFY_TYPE)pCNavEvSink->GetFlags());
 
-		NavFreeMem(PsData);
+		NavFree(PsData);
 	}
 	return WBEM_S_NO_ERROR;
 }
@@ -264,7 +264,7 @@ NAVSTATUS NAVAPI NavRegisterProcessFilter(
 	IN PNAV_PROCESS_FILTER_CALLBACK FilterCallback,
 	OUT PNAV_PROCESS_FILTER* ProcessFilter)
 {
-	PNAV_PROCESS_FILTER PsFilter = (PNAV_PROCESS_FILTER)NavAllocMem(sizeof(NAV_PROCESS_FILTER));
+	PNAV_PROCESS_FILTER PsFilter = (PNAV_PROCESS_FILTER)NavAllocate(sizeof(NAV_PROCESS_FILTER));
 
 	PsFilter->FilterCallback = FilterCallback;
 	PsFilter->EventSinkCreation = new CNavWmiEventSink;
@@ -410,7 +410,7 @@ NAVSTATUS NAVAPI NavUnregisterProcessFilter(
 	delete ProcessFilter->EventSinkCreation;
 	delete ProcessFilter->EventSinkTermination;
 
-	NavFreeMem(ProcessFilter);
+	NavFree(ProcessFilter);
 
 	return NAV_UNREGISTER_PROCESS_FILTER_STATUS_SUCCESS;
 }
@@ -436,14 +436,14 @@ HRESULT STDMETHODCALLTYPE NavPnpDeviceFilterCallback(
 		DriveName = (LPWSTR)V_UINT_PTR(&Value);
 
 		PNAV_PNP_DEVICE_FILTER PnpFilter = (PNAV_PNP_DEVICE_FILTER)pCNavEvSink->GetParameters();
-		PNAV_PNP_DEVICE_DATA PnpData = (PNAV_PNP_DEVICE_DATA)NavAllocMem(sizeof(NAV_PNP_DEVICE_DATA));
+		PNAV_PNP_DEVICE_DATA PnpData = (PNAV_PNP_DEVICE_DATA)NavAllocate(sizeof(NAV_PNP_DEVICE_DATA));
 
 		PnpData->CreationTime = CreationTime;
 		PnpData->DriveName = DriveName;
 
 		PnpFilter->FilterCallback(*PnpData, (NAV_PNP_DEVICE_NOTIFY_TYPE)pCNavEvSink->GetFlags());
 
-		NavFreeMem(PnpData);
+		NavFree(PnpData);
 	}
 	return WBEM_S_NO_ERROR;
 }
@@ -452,7 +452,7 @@ NAVSTATUS NAVAPI NavRegisterPnpDeviceFilter(
 	IN PNAV_PNP_DEVICE_FILTER_CALLBACK FilterCallback,
 	OUT PNAV_PNP_DEVICE_FILTER* DeviceFilter)
 {
-	PNAV_PNP_DEVICE_FILTER PnpFilter = (PNAV_PNP_DEVICE_FILTER)NavAllocMem(sizeof(NAV_PNP_DEVICE_FILTER));
+	PNAV_PNP_DEVICE_FILTER PnpFilter = (PNAV_PNP_DEVICE_FILTER)NavAllocate(sizeof(NAV_PNP_DEVICE_FILTER));
 
 	PnpFilter->FilterCallback = FilterCallback;
 	PnpFilter->EventSinkInserted = new CNavWmiEventSink;
@@ -598,7 +598,7 @@ NAVSTATUS NAVAPI NavUnregisterPnpDeviceFilter(
 	delete PnpFilter->EventSinkInserted;
 	delete PnpFilter->EventSinkRemoved;
 
-	NavFreeMem(PnpFilter);
+	NavFree(PnpFilter);
 
 	return NAV_UNREGISTER_PNP_DEVICE_FILTER_STATUS_SUCCESS;
 }

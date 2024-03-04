@@ -11,7 +11,7 @@ NAVSTATUS NAVAPI NavRetrieveTcpTable(PNAV_TCP_INFO TcpInfo)
 		Status = GetExtendedTcpTable(
 			TcpTableBuffer, &TcpTableSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, NULL);
 		if (TcpTableBuffer == NULL) {
-			TcpTableBuffer = NavAllocMem(TcpTableSize);
+			TcpTableBuffer = NavAllocate(TcpTableSize);
 		}
 		else {
 			TcpTableBuffer = NavReAllocMem(TcpTableBuffer, TcpTableSize);
@@ -30,7 +30,7 @@ NAVSTATUS NAVAPI NavRetrieveTcpTable(PNAV_TCP_INFO TcpInfo)
 		Status = GetExtendedTcpTable(
 			TcpTableBuffer, &TcpTableSize, FALSE, AF_INET6, TCP_TABLE_OWNER_PID_ALL, NULL);
 		if (TcpTableBuffer == NULL) {
-			TcpTableBuffer = NavAllocMem(TcpTableSize);
+			TcpTableBuffer = NavAllocate(TcpTableSize);
 		}
 		else {
 			TcpTableBuffer = NavReAllocMem(TcpTableBuffer, TcpTableSize);
@@ -46,9 +46,9 @@ NAVSTATUS NAVAPI NavRetrieveTcpTable(PNAV_TCP_INFO TcpInfo)
 
 NAVSTATUS NAVAPI NavReleaseTcpTable(PNAV_TCP_INFO TcpInfo) 
 {
-	if (NavFreeMem(TcpInfo->TcpTablev4) == FALSE)
+	if (NavFree(TcpInfo->TcpTablev4) == FALSE)
 		return NAV_RELEASE_TCP_TABLE_STATUS_FAILED;
-	if (NavFreeMem(TcpInfo->TcpTablev6) == FALSE)
+	if (NavFree(TcpInfo->TcpTablev6) == FALSE)
 		return NAV_RELEASE_TCP_TABLE_STATUS_FAILED;
 	return NAV_RELEASE_TCP_TABLE_STATUS_SUCCESS;
 }

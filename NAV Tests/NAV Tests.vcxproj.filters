@@ -27,7 +27,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NAV Tests.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="nav\base\handles.cpp">
@@ -57,7 +57,7 @@
     <ClCompile Include="nav\base\service.cpp">
       <Filter>Source Files\nav\base</Filter>
     </ClCompile>
-    <ClCompile Include="nav\base\syscall.cpp">
+    <ClCompile Include="nav\base\pipe.cpp">
       <Filter>Source Files\nav\base</Filter>
     </ClCompile>
     <ClCompile Include="nav\base\system.cpp">
@@ -89,7 +89,7 @@
     <ClInclude Include="nav\base\status.h">
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
-    <ClInclude Include="nav\base\syscall.h">
+    <ClInclude Include="nav\base\pipe.h">
       <Filter>Header Files\nav\base</Filter>
     </ClInclude>
     <ClInclude Include="nav\base\winapi.h">
@@ -116,5 +116,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

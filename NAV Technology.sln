@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NAV Net Filter", "NAV Net Filter\NAV Net Filter.csproj", "{99D1B94B-2B4D-47F6-A744-7BDD0298C689}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NAV Tests", "NAV Tests\NAV Tests.vcxproj", "{3F42B5D7-5CC7-4D9F-A113-102E0468815F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NAV Core Service", "NAV Core Service\NAV Core Service.vcxproj", "{3161C862-C57D-4E63-81E8-C6CAE61FD4EB}"
@@ -19,18 +17,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Debug|x64.Build.0 = Debug|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Debug|x86.Build.0 = Debug|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Release|Any CPU.Build.0 = Release|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Release|x64.ActiveCfg = Release|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Release|x64.Build.0 = Release|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Release|x86.ActiveCfg = Release|Any CPU
-		{99D1B94B-2B4D-47F6-A744-7BDD0298C689}.Release|x86.Build.0 = Release|Any CPU
 		{3F42B5D7-5CC7-4D9F-A113-102E0468815F}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{3F42B5D7-5CC7-4D9F-A113-102E0468815F}.Debug|Any CPU.Build.0 = Debug|x64
 		{3F42B5D7-5CC7-4D9F-A113-102E0468815F}.Debug|x64.ActiveCfg = Debug|x64

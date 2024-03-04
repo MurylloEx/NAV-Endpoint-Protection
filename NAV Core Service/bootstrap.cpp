@@ -17,9 +17,11 @@ DWORD WINAPI ServiceController(DWORD dwCtrlCode, DWORD dwEventType, LPVOID lpEve
     return Dispatcher(dwEventType, lpEventData, Context);
 }
 
-BOOL WINAPI CreateServiceContext(DWORD dwNumServicesArgs, LPWSTR* lpServiceArgVectors, PSERVICE_CONTEXT Context) {
+PSERVICE_CONTEXT WINAPI CreateServiceContext(DWORD dwNumServicesArgs, LPWSTR* lpServiceArgVectors) {
+    PSERVICE_CONTEXT Context = (PSERVICE_CONTEXT)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(SERVICE_CONTEXT));
+
     if (!Context) {
-        return FALSE;
+        return NULL;
     }
 
     Context->Arguments = lpServiceArgVectors;
@@ -38,7 +40,8 @@ BOOL WINAPI CreateServiceContext(DWORD dwNumServicesArgs, LPWSTR* lpServiceArgVe
     Context->ServiceStatusHandle = RegisterServiceCtrlHandlerExW(SERVICE_NAME, ServiceController, (LPVOID)Context);
 
     if (!Context->ServiceStatusHandle) {
-        return FALSE;
+        HeapFree(GetProcessHeap(), NULL, Context);
+        return NULL;
     }
 
     DEV_BROADCAST_DEVICEINTERFACE DeviceFilter = { 0 };
@@ -51,45 +54,46 @@ BOOL WINAPI CreateServiceContext(DWORD dwNumServicesArgs, LPWSTR* lpServiceArgVe
         Context->ServiceStatusHandle, &DeviceFilter, DEVICE_NOTIFY_SERVICE_HANDLE);
 
     if (!Context->DeviceNotificationHandle) {
-        return FALSE;
+        HeapFree(GetProcessHeap(), NULL, Context);
+        return NULL;
     }
 
     Context->PowerAcDcNotificationHandle = RegisterPowerSettingNotification(
         Context->ServiceStatusHandle, &GUID_ACDC_POWER_SOURCE, DEVICE_NOTIFY_SERVICE_HANDLE);
 
     if (!Context->PowerAcDcNotificationHandle) {
-        return FALSE;
+        UnregisterDeviceNotification(Context->DeviceNotificationHandle);
+        HeapFree(GetProcessHeap(), NULL, Context);
+        return NULL;
     }
 
     Context->PowerBatteryNotificationHandle = RegisterPowerSettingNotification(
         Context->ServiceStatusHandle, &GUID_BATTERY_PERCENTAGE_REMAINING, DEVICE_NOTIFY_SERVICE_HANDLE);
 
     if (!Context->PowerBatteryNotificationHandle) {
-        return FALSE;
+        UnregisterDeviceNotification(Context->DeviceNotificationHandle);
+        UnregisterPowerSettingNotification(Context->PowerAcDcNotificationHandle);
+        HeapFree(GetProcessHeap(), NULL, Context);
+        return NULL;
     }
 
-    return TRUE;
+    return Context;
 }
 
 VOID WINAPI ServiceMain(DWORD dwNumServicesArgs, LPWSTR* lpServiceArgVectors) {
-    PSERVICE_CONTEXT Context = (PSERVICE_CONTEXT)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(SERVICE_CONTEXT));
-    BOOL ServiceContextStatus = CreateServiceContext(dwNumServicesArgs, lpServiceArgVectors, Context);
+    PSERVICE_CONTEXT Context = CreateServiceContext(dwNumServicesArgs, lpServiceArgVectors);
 
-    if (ServiceContextStatus == TRUE) {
+    if (Context) {
         ServiceStart(Context);
-    }
-    else {
-        //Notify error to SCM
     }
 }
 
-int main(int argc, wchar_t** argv)
-{
+int main(int argc, wchar_t** argv) {
     UNREFERENCED_PARAMETER(argc);
     UNREFERENCED_PARAMETER(argv);
 
     if (!IsRunningAsLocalSystem()) {
-        return EXIT_SUCCESS;
+        return ERROR_INCOMPATIBLE_SERVICE_PRIVILEGE;
     }
 
     SERVICE_TABLE_ENTRYW ServiceTable[2] = { 0 };

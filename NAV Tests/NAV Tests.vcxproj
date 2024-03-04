@@ -151,7 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="NAV Tests.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="nav\base\handles.cpp" />
     <ClCompile Include="nav\base\hook.cpp" />
     <ClCompile Include="nav\base\loader.cpp" />
@@ -161,7 +161,7 @@
     <ClCompile Include="nav\base\privileges.cpp" />
     <ClCompile Include="nav\base\protection.cpp" />
     <ClCompile Include="nav\base\service.cpp" />
-    <ClCompile Include="nav\base\syscall.cpp" />
+    <ClCompile Include="nav\base\pipe.cpp" />
     <ClCompile Include="nav\base\system.cpp" />
     <ClCompile Include="nav\base\winapi.cpp" />
     <ClCompile Include="nav\base\wmi.cpp" />
@@ -177,12 +177,13 @@
     <ClInclude Include="nav\base\protection.h" />
     <ClInclude Include="nav\base\service.h" />
     <ClInclude Include="nav\base\status.h" />
-    <ClInclude Include="nav\base\syscall.h" />
+    <ClInclude Include="nav\base\pipe.h" />
     <ClInclude Include="nav\base\system.h" />
     <ClInclude Include="nav\base\winapi.h" />
     <ClInclude Include="nav\base\wmi.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cpp.hint" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
